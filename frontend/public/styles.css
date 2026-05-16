@@ -42,6 +42,17 @@ body {
   border: 1px solid var(--line);
 }
 
+.admin-panel {
+  position: fixed;
+  right: 14px;
+  bottom: 76px;
+  width: min(92vw, 380px);
+  max-height: 78vh;
+  overflow: auto;
+  z-index: 12;
+  animation: panelIn 0.22s ease-out;
+}
+
 .hero {
   background: linear-gradient(110deg, #0f4c5c, #146b80);
   color: #f5fcff;
@@ -143,8 +154,48 @@ button:hover {
   font-size: 13px;
 }
 
+.admin-tab {
+  position: fixed;
+  right: 14px;
+  bottom: 14px;
+  width: auto;
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: linear-gradient(120deg, #1f2937, #374151);
+  color: #fff;
+  z-index: 14;
+  box-shadow: 0 10px 20px rgba(31, 41, 55, 0.32);
+}
+
+.admin-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.45);
+  display: grid;
+  place-items: end center;
+  padding: 14px;
+  z-index: 20;
+}
+
+.admin-modal-card {
+  width: min(92vw, 380px);
+  background: #fff;
+  border-radius: 16px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.2);
+  animation: panelIn 0.22s ease-out;
+}
+
+@keyframes panelIn {
+  from { transform: translateY(12px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
 @media (max-width: 640px) {
   .hero h1 { font-size: 26px; }
   .card { padding: 14px; border-radius: 14px; }
   .action-grid { grid-template-columns: 1fr; }
+  .admin-panel { right: 10px; bottom: 68px; }
+  .admin-tab { right: 10px; bottom: 10px; }
 }

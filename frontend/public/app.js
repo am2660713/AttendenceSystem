@@ -19,12 +19,14 @@ const newEmployeeDepartment = document.getElementById("newEmployeeDepartment");
 const addEmployeeBtn = document.getElementById("addEmployeeBtn");
 const adminMsg = document.getElementById("adminMsg");
 const employeeList = document.getElementById("employeeList");
-const adminLockCard = document.getElementById("adminLockCard");
 const adminPanelCard = document.getElementById("adminPanelCard");
 const adminPasswordInput = document.getElementById("adminPassword");
 const unlockAdminBtn = document.getElementById("unlockAdminBtn");
 const unlockMsg = document.getElementById("unlockMsg");
 const lockAdminBtn = document.getElementById("lockAdminBtn");
+const adminTabBtn = document.getElementById("adminTabBtn");
+const adminModal = document.getElementById("adminModal");
+const closeAdminModalBtn = document.getElementById("closeAdminModalBtn");
 
 let currentEmployee = null;
 let adminUnlocked = localStorage.getItem("adminUnlocked") === "true";
@@ -89,11 +91,12 @@ const refresh = async () => {
 };
 
 const applyAdminVisibility = () => {
-  adminLockCard.classList.toggle("hidden", adminUnlocked);
   adminPanelCard.classList.toggle("hidden", !adminUnlocked);
+  adminModal.classList.add("hidden");
+  adminPasswordInput.value = "";
+  unlockMsg.textContent = "";
   if (!adminUnlocked) {
-    adminPasswordInput.value = "";
-    unlockMsg.textContent = "";
+    adminMsg.textContent = "";
   }
 };
 
@@ -190,7 +193,7 @@ unlockAdminBtn.addEventListener("click", async () => {
     adminUnlocked = true;
     localStorage.setItem("adminUnlocked", "true");
     applyAdminVisibility();
-    setMessage(unlockMsg, data.message, true);
+    setMessage(adminMsg, data.message, true);
     await renderEmployees();
   } catch (error) {
     setMessage(unlockMsg, error.message);
@@ -201,6 +204,29 @@ lockAdminBtn.addEventListener("click", () => {
   adminUnlocked = false;
   localStorage.removeItem("adminUnlocked");
   applyAdminVisibility();
+});
+
+adminTabBtn.addEventListener("click", () => {
+  if (adminUnlocked) {
+    adminPanelCard.classList.remove("hidden");
+    return;
+  }
+  adminModal.classList.remove("hidden");
+  adminPasswordInput.focus();
+});
+
+closeAdminModalBtn.addEventListener("click", () => {
+  adminModal.classList.add("hidden");
+  adminPasswordInput.value = "";
+  unlockMsg.textContent = "";
+});
+
+adminModal.addEventListener("click", (event) => {
+  if (event.target === adminModal) {
+    adminModal.classList.add("hidden");
+    adminPasswordInput.value = "";
+    unlockMsg.textContent = "";
+  }
 });
 
 const bootstrap = async () => {

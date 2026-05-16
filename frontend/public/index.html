@@ -45,16 +45,7 @@
         <div id="history" class="history"></div>
       </section>
 
-      <section class="card" id="adminLockCard">
-        <h2>Admin Access</h2>
-        <p class="muted">Enter admin password to manage employees.</p>
-        <label for="adminPassword">Admin Password</label>
-        <input id="adminPassword" type="password" placeholder="Enter password" />
-        <button id="unlockAdminBtn" class="primary">Unlock Admin</button>
-        <p id="unlockMsg" class="msg"></p>
-      </section>
-
-      <section class="card hidden" id="adminPanelCard">
+      <section class="card hidden admin-panel" id="adminPanelCard">
         <div class="row between">
           <h2>Admin Panel</h2>
           <button id="lockAdminBtn" class="secondary small">Lock</button>
@@ -70,6 +61,22 @@
         <p id="adminMsg" class="msg"></p>
         <h3>Employee List</h3>
         <div id="employeeList" class="history"></div>
+      </section>
+
+      <button id="adminTabBtn" class="admin-tab" type="button">Admin</button>
+
+      <section class="admin-modal hidden" id="adminModal">
+        <div class="admin-modal-card">
+          <div class="row between">
+            <h3>Admin Access</h3>
+            <button id="closeAdminModalBtn" class="secondary small" type="button">Close</button>
+          </div>
+          <p class="muted">Enter password to open admin tools.</p>
+          <label for="adminPassword">Admin Password</label>
+          <input id="adminPassword" type="password" placeholder="Enter password" />
+          <button id="unlockAdminBtn" class="primary" type="button">Unlock Admin</button>
+          <p id="unlockMsg" class="msg"></p>
+        </div>
       </section>
     </main>
 
