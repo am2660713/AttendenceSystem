@@ -631,6 +631,13 @@ select:focus {
   }
 }
 
+@media (max-width: 899px) {
+  .admin-tab,
+  .admin-modal {
+    display: none !important;
+  }
+}
+
 @media (min-width: 900px) {
   .admin-modal {
     place-items: center;
