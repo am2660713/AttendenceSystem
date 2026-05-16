@@ -140,6 +140,7 @@ const closeAdminPanels = (lock = true) => {
   }
   adminModal.classList.add("hidden");
   adminPanelModal.classList.add("hidden");
+  adminPanelModal.classList.remove("summary-mode", "tools-mode", "list-mode");
   adminPasswordInput.value = "";
   unlockMsg.textContent = "";
   if (lock) {
@@ -149,6 +150,9 @@ const closeAdminPanels = (lock = true) => {
 
 const setAdminView = (view) => {
   activeAdminView = view;
+  adminPanelModal.classList.toggle("summary-mode", view === "summary");
+  adminPanelModal.classList.toggle("tools-mode", view === "tools");
+  adminPanelModal.classList.toggle("list-mode", view === "list");
   adminViewButtons.forEach((button) => {
     button.classList.toggle("active", button.dataset.adminViewBtn === view);
   });
@@ -615,6 +619,7 @@ adminTabBtn.addEventListener("click", () => {
   adminUnlocked = false;
   adminToken = null;
   adminPanelModal.classList.add("hidden");
+  adminPanelModal.classList.remove("summary-mode", "tools-mode", "list-mode");
   adminModal.classList.remove("hidden");
   adminPasswordInput.focus();
   setAdminView("tools");
