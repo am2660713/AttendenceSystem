@@ -1,6 +1,6 @@
 :root {
-  --bg-1: #f6f7f2;
-  --bg-2: #e9ece4;
+  --bg-1: #eef3ef;
+  --bg-2: #dce7e2;
   --card: #ffffff;
   --text: #1f2937;
   --muted: #6b7280;
@@ -16,29 +16,32 @@
 
 body {
   margin: 0;
-  font-family: "Trebuchet MS", "Segoe UI", Tahoma, sans-serif;
+  font-family: "Segoe UI", "Aptos", "Trebuchet MS", Tahoma, sans-serif;
   background:
-    radial-gradient(circle at 15% 15%, rgba(15, 76, 92, 0.12), transparent 35%),
-    radial-gradient(circle at 85% 20%, rgba(31, 122, 79, 0.12), transparent 33%),
+    radial-gradient(circle at 10% 10%, rgba(15, 76, 92, 0.16), transparent 30%),
+    radial-gradient(circle at 90% 20%, rgba(31, 122, 79, 0.13), transparent 30%),
+    radial-gradient(circle at 50% 100%, rgba(20, 107, 128, 0.12), transparent 34%),
     linear-gradient(140deg, var(--bg-1), var(--bg-2));
   color: var(--text);
 }
 
 .app {
   min-height: 100dvh;
-  max-width: 960px;
+  max-width: 1040px;
   margin: 0 auto;
-  padding: 20px 16px 30px;
+  padding: 22px 16px 34px;
   display: grid;
-  gap: 14px;
+  gap: 16px;
 }
 
 .card {
   width: 100%;
   background: var(--card);
-  border-radius: 18px;
-  padding: 18px 16px;
-  box-shadow: 0 16px 32px rgba(13, 27, 30, 0.09);
+  border-radius: 22px;
+  padding: 20px 18px;
+  box-shadow:
+    0 22px 42px rgba(13, 27, 30, 0.10),
+    inset 0 1px 0 rgba(255, 255, 255, 0.75);
   border: 1px solid var(--line);
 }
 
@@ -54,20 +57,56 @@ body {
 }
 
 .hero {
-  background: linear-gradient(110deg, #0f4c5c, #146b80);
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at top right, rgba(255, 255, 255, 0.15), transparent 26%),
+    linear-gradient(110deg, #0b3f4d, #146b80 58%, #0d7288);
   color: #f5fcff;
-  border-radius: 18px;
-  padding: 20px 18px;
-  box-shadow: 0 16px 32px rgba(15, 76, 92, 0.22);
+  border-radius: 24px;
+  padding: 24px 20px 22px;
+  box-shadow:
+    0 20px 40px rgba(15, 76, 92, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+.hero::after {
+  content: "";
+  position: absolute;
+  inset: auto -60px -80px auto;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.18), transparent 66%);
+  pointer-events: none;
+}
+
+.hero-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
 }
 
 .company {
   margin: 0 0 8px;
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #dff8ff;
+}
+
+.company::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: linear-gradient(120deg, #9bf6ff, #c4ffd7);
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.14);
 }
 
 .kicker {
@@ -80,13 +119,72 @@ body {
 
 .hero h1 {
   margin: 0 0 6px;
-  font-size: 30px;
+  font-size: 34px;
   line-height: 1.1;
+  letter-spacing: -0.03em;
 }
 
 .hero .muted {
   color: rgba(245, 252, 255, 0.88);
   margin-bottom: 0;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: auto;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #effcff;
+  font-size: 12px;
+  font-weight: 700;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
+}
+
+.login-card {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at top right, rgba(15, 76, 92, 0.06), transparent 22%),
+    linear-gradient(180deg, #ffffff, #f8fbfa);
+}
+
+.login-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg, #0f4c5c, #12a4b2, #1f7a4f);
+}
+
+.login-ribbon {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: linear-gradient(120deg, rgba(15, 76, 92, 0.08), rgba(31, 122, 79, 0.08));
+  border: 1px solid rgba(20, 107, 128, 0.12);
+}
+
+.login-ribbon span {
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--primary-soft);
+  font-weight: 800;
+}
+
+.login-ribbon strong {
+  font-size: 13px;
+  color: #284250;
 }
 
 .hidden { display: none !important; }
