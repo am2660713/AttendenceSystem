@@ -13,6 +13,12 @@ const checkOutBtn = document.getElementById("checkOutBtn");
 const actionMsg = document.getElementById("actionMsg");
 const historyEl = document.getElementById("history");
 const logoutBtn = document.getElementById("logoutBtn");
+const newEmployeeId = document.getElementById("newEmployeeId");
+const newEmployeeName = document.getElementById("newEmployeeName");
+const newEmployeeDepartment = document.getElementById("newEmployeeDepartment");
+const addEmployeeBtn = document.getElementById("addEmployeeBtn");
+const adminMsg = document.getElementById("adminMsg");
+const employeeList = document.getElementById("employeeList");
 
 let currentEmployee = null;
 
@@ -75,6 +81,18 @@ const refresh = async () => {
   await Promise.all([renderToday(), renderHistory()]);
 };
 
+const renderEmployees = async () => {
+  const data = await callApi("/employees");
+  if (!data.employees.length) {
+    employeeList.innerHTML = "<p class='muted'>No employees found.</p>";
+    return;
+  }
+
+  employeeList.innerHTML = data.employees
+    .map((emp) => `<div class="record"><strong>${emp.id}</strong><br/>${emp.name}<br/>${emp.department}</div>`)
+    .join("");
+};
+
 loginBtn.addEventListener("click", async () => {
   try {
     loginMsg.textContent = "";
@@ -128,6 +146,25 @@ logoutBtn.addEventListener("click", () => {
   actionMsg.textContent = "";
 });
 
+addEmployeeBtn.addEventListener("click", async () => {
+  try {
+    const id = newEmployeeId.value.trim().toUpperCase();
+    const name = newEmployeeName.value.trim();
+    const department = newEmployeeDepartment.value.trim();
+
+    if (!id || !name || !department) throw new Error("Please fill all employee fields.");
+
+    const data = await callApi("/employees", "POST", { id, name, department });
+    setMessage(adminMsg, data.message, true);
+    newEmployeeId.value = "";
+    newEmployeeName.value = "";
+    newEmployeeDepartment.value = "";
+    await renderEmployees();
+  } catch (error) {
+    setMessage(adminMsg, error.message);
+  }
+});
+
 const bootstrap = async () => {
   const cached = localStorage.getItem("attendanceEmployee");
   if (!cached) return;
@@ -145,3 +182,4 @@ const bootstrap = async () => {
 };
 
 bootstrap();
+renderEmployees();

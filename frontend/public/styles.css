@@ -61,6 +61,7 @@ button {
 .success { background: var(--success); }
 .danger { background: var(--danger); }
 .secondary { background: var(--secondary); width: auto; padding: 8px 12px; }
+.full { width: 100%; padding: 12px; }
 
 .muted { color: var(--muted); margin: 0 0 12px; }
 .msg { min-height: 24px; font-size: 14px; }

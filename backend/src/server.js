@@ -159,6 +159,40 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    if (req.method === "GET" && url.pathname === "/api/employees") {
+      const dbRes = await query("SELECT id, name, department FROM employees ORDER BY id");
+      sendJson(res, 200, { employees: dbRes.rows }, corsOrigin);
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/employees") {
+      const body = await parseBody(req);
+      const id = String(body.id || "").trim().toUpperCase();
+      const name = String(body.name || "").trim();
+      const department = String(body.department || "").trim();
+
+      if (!id || !name || !department) {
+        sendJson(res, 400, { message: "id, name, and department are required." }, corsOrigin);
+        return;
+      }
+
+      const exists = await query("SELECT id FROM employees WHERE id = $1", [id]);
+      if (exists.rows[0]) {
+        sendJson(res, 409, { message: "Employee ID already exists." }, corsOrigin);
+        return;
+      }
+
+      const insertRes = await query(
+        `INSERT INTO employees (id, name, department)
+         VALUES ($1, $2, $3)
+         RETURNING id, name, department`,
+        [id, name, department]
+      );
+
+      sendJson(res, 201, { message: "Employee added successfully.", employee: insertRes.rows[0] }, corsOrigin);
+      return;
+    }
+
     if (req.method === "GET" && url.pathname === "/api/attendance/today") {
       const employeeId = String(url.searchParams.get("employeeId") || "").trim().toUpperCase();
       if (!employeeId) return sendJson(res, 400, { message: "employeeId is required." }, corsOrigin);
