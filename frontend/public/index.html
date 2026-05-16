@@ -112,6 +112,7 @@
             <button class="admin-view-btn active" type="button" data-admin-view-btn="tools">Employee Tools</button>
             <button class="admin-view-btn" type="button" data-admin-view-btn="summary">HR Summary</button>
             <button class="admin-view-btn" type="button" data-admin-view-btn="list">Employee List</button>
+            <button class="admin-view-btn" type="button" data-admin-view-btn="security">Change Password</button>
           </div>
           <div class="admin-panel-grid">
             <section class="admin-panel-section admin-view-pane" data-admin-view="tools">
@@ -147,24 +148,6 @@
                 <button id="saveOfficeLocationBtn" class="secondary full" type="button">Save Office Location</button>
                 <p id="officeLocationMsg" class="msg"></p>
               </div>
-
-              <div class="admin-subsection">
-                <h3>Change Password</h3>
-                <label for="currentAdminPassword">Current Password</label>
-                <div class="password-field">
-                  <input id="currentAdminPassword" type="password" placeholder="Current password" />
-                  <button id="toggleCurrentAdminPasswordBtn" class="password-toggle" type="button" aria-label="Show current password">Show</button>
-                </div>
-                <label for="newAdminPassword">New Password</label>
-                <div class="password-field">
-                  <input id="newAdminPassword" type="password" placeholder="New password" />
-                  <button id="toggleNewAdminPasswordBtn" class="password-toggle" type="button" aria-label="Show new password">Show</button>
-                </div>
-                <label for="confirmAdminPassword">Confirm New Password</label>
-                <input id="confirmAdminPassword" type="password" placeholder="Confirm new password" />
-                <button id="changeAdminPasswordBtn" class="secondary full" type="button">Change Admin Password</button>
-                <p id="changeAdminPasswordMsg" class="msg"></p>
-              </div>
             </section>
 
             <section class="admin-panel-section admin-view-pane hidden" data-admin-view="summary">
@@ -199,6 +182,25 @@
                 <span id="employeePageInfo" class="pager-info">Page 1</span>
                 <button id="employeeNextBtn" class="secondary small" type="button">Next</button>
               </div>
+            </section>
+
+            <section class="admin-panel-section admin-view-pane hidden" data-admin-view="security">
+              <h3>Change Password</h3>
+              <p class="muted">Update the admin password from here. Changes apply immediately.</p>
+              <label for="currentAdminPassword">Current Password</label>
+              <div class="password-field">
+                <input id="currentAdminPassword" type="password" placeholder="Current password" />
+                <button id="toggleCurrentAdminPasswordBtn" class="password-toggle" type="button" aria-label="Show current password">Show</button>
+              </div>
+              <label for="newAdminPassword">New Password</label>
+              <div class="password-field">
+                <input id="newAdminPassword" type="password" placeholder="New password" />
+                <button id="toggleNewAdminPasswordBtn" class="password-toggle" type="button" aria-label="Show new password">Show</button>
+              </div>
+              <label for="confirmAdminPassword">Confirm New Password</label>
+              <input id="confirmAdminPassword" type="password" placeholder="Confirm new password" />
+              <button id="changeAdminPasswordBtn" class="primary" type="button">Change Admin Password</button>
+              <p id="changeAdminPasswordMsg" class="msg"></p>
             </section>
           </div>
         </div>

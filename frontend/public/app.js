@@ -191,6 +191,8 @@ const setAdminView = (view) => {
     renderEmployees();
   } else if (view === "tools") {
     loadOfficeSettings();
+  } else if (view === "security") {
+    // Password page is self-contained.
   }
 };
 
