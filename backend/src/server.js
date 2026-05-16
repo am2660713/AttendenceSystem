@@ -7,6 +7,7 @@ import { initDb, query } from "./db.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const configPath = path.join(__dirname, "..", "data", "config.json");
+const adminPassword = process.env.ADMIN_PASSWORD || "admin123";
 
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || "*")
   .split(",")
@@ -156,6 +157,21 @@ const server = http.createServer(async (req, res) => {
 
       if (!employee) return sendJson(res, 404, { message: "Employee not found." }, corsOrigin);
       sendJson(res, 200, { employee }, corsOrigin);
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/admin/unlock") {
+      const body = await parseBody(req);
+      const password = String(body.password || "");
+      if (!password) {
+        sendJson(res, 400, { message: "Password is required." }, corsOrigin);
+        return;
+      }
+      if (password !== adminPassword) {
+        sendJson(res, 401, { message: "Invalid admin password." }, corsOrigin);
+        return;
+      }
+      sendJson(res, 200, { message: "Admin unlocked." }, corsOrigin);
       return;
     }
 

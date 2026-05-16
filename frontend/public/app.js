@@ -19,8 +19,15 @@ const newEmployeeDepartment = document.getElementById("newEmployeeDepartment");
 const addEmployeeBtn = document.getElementById("addEmployeeBtn");
 const adminMsg = document.getElementById("adminMsg");
 const employeeList = document.getElementById("employeeList");
+const adminLockCard = document.getElementById("adminLockCard");
+const adminPanelCard = document.getElementById("adminPanelCard");
+const adminPasswordInput = document.getElementById("adminPassword");
+const unlockAdminBtn = document.getElementById("unlockAdminBtn");
+const unlockMsg = document.getElementById("unlockMsg");
+const lockAdminBtn = document.getElementById("lockAdminBtn");
 
 let currentEmployee = null;
+let adminUnlocked = localStorage.getItem("adminUnlocked") === "true";
 
 const setMessage = (el, text, ok = false) => {
   el.textContent = text;
@@ -79,6 +86,15 @@ const renderHistory = async () => {
 
 const refresh = async () => {
   await Promise.all([renderToday(), renderHistory()]);
+};
+
+const applyAdminVisibility = () => {
+  adminLockCard.classList.toggle("hidden", adminUnlocked);
+  adminPanelCard.classList.toggle("hidden", !adminUnlocked);
+  if (!adminUnlocked) {
+    adminPasswordInput.value = "";
+    unlockMsg.textContent = "";
+  }
 };
 
 const renderEmployees = async () => {
@@ -148,6 +164,7 @@ logoutBtn.addEventListener("click", () => {
 
 addEmployeeBtn.addEventListener("click", async () => {
   try {
+    if (!adminUnlocked) throw new Error("Unlock admin first.");
     const id = newEmployeeId.value.trim().toUpperCase();
     const name = newEmployeeName.value.trim();
     const department = newEmployeeDepartment.value.trim();
@@ -163,6 +180,27 @@ addEmployeeBtn.addEventListener("click", async () => {
   } catch (error) {
     setMessage(adminMsg, error.message);
   }
+});
+
+unlockAdminBtn.addEventListener("click", async () => {
+  try {
+    const password = adminPasswordInput.value.trim();
+    if (!password) throw new Error("Enter admin password.");
+    const data = await callApi("/admin/unlock", "POST", { password });
+    adminUnlocked = true;
+    localStorage.setItem("adminUnlocked", "true");
+    applyAdminVisibility();
+    setMessage(unlockMsg, data.message, true);
+    await renderEmployees();
+  } catch (error) {
+    setMessage(unlockMsg, error.message);
+  }
+});
+
+lockAdminBtn.addEventListener("click", () => {
+  adminUnlocked = false;
+  localStorage.removeItem("adminUnlocked");
+  applyAdminVisibility();
 });
 
 const bootstrap = async () => {
@@ -182,4 +220,7 @@ const bootstrap = async () => {
 };
 
 bootstrap();
-renderEmployees();
+applyAdminVisibility();
+if (adminUnlocked) {
+  renderEmployees();
+}

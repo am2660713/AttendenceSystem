@@ -8,12 +8,18 @@
   </head>
   <body>
     <main class="app">
+      <section class="hero">
+        <p class="kicker">Workday Flow</p>
+        <h1>Geo Attendance Portal</h1>
+        <p class="muted">Fast mobile check-in and check-out with office geofence and simple admin controls.</p>
+      </section>
+
       <section class="card" id="loginCard">
-        <h1>Geo Attendance</h1>
-        <p class="muted">Location based check-in / check-out</p>
+        <h2>Employee Login</h2>
+        <p class="muted">Use employee ID or full name</p>
         <label for="employeeId">Employee ID or Name</label>
         <input id="employeeId" placeholder="EMP001 or Aarav Sharma" />
-        <button id="loginBtn">Login</button>
+        <button id="loginBtn" class="primary">Login</button>
         <p id="loginMsg" class="msg"></p>
       </section>
 
@@ -23,13 +29,15 @@
             <h2 id="empName"></h2>
             <p class="muted" id="empDept"></p>
           </div>
-          <button id="logoutBtn" class="secondary">Logout</button>
+          <button id="logoutBtn" class="secondary small">Logout</button>
         </div>
 
         <div class="status" id="todayStatus">No attendance yet for today.</div>
 
-        <button id="checkInBtn" class="success">Check In (Use My Location)</button>
-        <button id="checkOutBtn" class="danger">Check Out (Use My Location)</button>
+        <div class="action-grid">
+          <button id="checkInBtn" class="success">Check In</button>
+          <button id="checkOutBtn" class="danger">Check Out</button>
+        </div>
 
         <p id="actionMsg" class="msg"></p>
 
@@ -37,16 +45,28 @@
         <div id="history" class="history"></div>
       </section>
 
-      <section class="card">
-        <h3>Admin: Add Employee</h3>
-        <p class="muted">Add employees without using pgAdmin.</p>
+      <section class="card" id="adminLockCard">
+        <h2>Admin Access</h2>
+        <p class="muted">Enter admin password to manage employees.</p>
+        <label for="adminPassword">Admin Password</label>
+        <input id="adminPassword" type="password" placeholder="Enter password" />
+        <button id="unlockAdminBtn" class="primary">Unlock Admin</button>
+        <p id="unlockMsg" class="msg"></p>
+      </section>
+
+      <section class="card hidden" id="adminPanelCard">
+        <div class="row between">
+          <h2>Admin Panel</h2>
+          <button id="lockAdminBtn" class="secondary small">Lock</button>
+        </div>
+        <p class="muted">Add employees and view all registered users.</p>
         <label for="newEmployeeId">Employee ID</label>
         <input id="newEmployeeId" placeholder="EMP004" />
         <label for="newEmployeeName">Employee Name</label>
         <input id="newEmployeeName" placeholder="Neha Patil" />
         <label for="newEmployeeDepartment">Department</label>
         <input id="newEmployeeDepartment" placeholder="Finance" />
-        <button id="addEmployeeBtn" class="secondary full">Add Employee</button>
+        <button id="addEmployeeBtn" class="primary">Add Employee</button>
         <p id="adminMsg" class="msg"></p>
         <h3>Employee List</h3>
         <div id="employeeList" class="history"></div>
