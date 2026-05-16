@@ -462,6 +462,32 @@ button:hover {
   gap: 12px;
 }
 
+.admin-panel-section[data-admin-view="summary"] label {
+  font-size: 12px;
+  margin-bottom: 4px;
+  color: var(--muted);
+}
+
+.admin-panel-section[data-admin-view="summary"] input,
+.admin-panel-section[data-admin-view="summary"] select {
+  padding: 8px 10px;
+  border-radius: 10px;
+  min-width: 0;
+  max-width: 260px;
+}
+
+.admin-panel-section[data-admin-view="summary"] button.secondary.full {
+  width: fit-content;
+  padding: 8px 12px;
+}
+
+.admin-panel-section[data-admin-view="summary"] #summaryStats {
+  padding: 8px 10px;
+  font-size: 13px;
+  line-height: 1.4;
+  background: #f6fbf9;
+}
+
 .pager {
   display: flex;
   flex-wrap: wrap;
@@ -540,6 +566,58 @@ select:focus {
   overflow: auto;
   border-top: 0;
   padding-bottom: 8px;
+}
+
+.summary-table-wrap {
+  width: 100%;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #fff;
+}
+
+.summary-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 860px;
+}
+
+.summary-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: linear-gradient(180deg, #f5f8f6, #ecf3ef);
+  color: var(--primary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 11px;
+  font-weight: 800;
+  text-align: left;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.summary-table tbody td {
+  padding: 13px 14px;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+  vertical-align: middle;
+}
+
+.summary-table tbody tr:nth-child(even) {
+  background: #fafdfb;
+}
+
+.summary-table tbody tr:hover {
+  background: #f3f9f7;
+}
+
+.summary-table tbody td:nth-child(3),
+.summary-table tbody td:nth-child(4),
+.summary-table tbody td:nth-child(5),
+.summary-table tbody td:nth-child(6) {
+  text-align: center;
+  white-space: nowrap;
 }
 
 .admin-panel-section[data-admin-view="summary"] > .pager {

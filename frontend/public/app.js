@@ -281,31 +281,36 @@ const renderSummary = async () => {
     }
 
     summaryTable.innerHTML = `
-      <div class="summary-grid summary-head">
-        <div>Employee</div>
-        <div>Department</div>
-        <div>Present</div>
-        <div>Late</div>
-        <div>OT hrs</div>
-        <div>Total hrs</div>
+      <div class="summary-table-wrap">
+        <table class="summary-table">
+          <thead>
+            <tr>
+              <th>Employee</th>
+              <th>Department</th>
+              <th>Present</th>
+              <th>Late</th>
+              <th>OT hrs</th>
+              <th>Total hrs</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${records
+              .map(
+                (item) => `
+                  <tr>
+                    <td><strong>${item.name}</strong></td>
+                    <td>${item.department}</td>
+                    <td>${Number(item.daysPresent || 0)}</td>
+                    <td>${Number(item.lateDays || 0)}</td>
+                    <td>${Number(item.overtimeHours || 0).toFixed(2)}</td>
+                    <td>${Number(item.totalHours || 0).toFixed(2)}</td>
+                  </tr>
+                `
+              )
+              .join("")}
+          </tbody>
+        </table>
       </div>
-      ${records
-        .map(
-          (item) => `
-            <div class="summary-grid">
-              <div>
-                <strong>${item.name}</strong><br />
-                <span class="muted">Monthly report</span>
-              </div>
-              <div>${item.department}</div>
-              <div>${Number(item.daysPresent || 0)}</div>
-              <div>${Number(item.lateDays || 0)}</div>
-              <div>${Number(item.overtimeHours || 0).toFixed(2)}</div>
-              <div>${Number(item.totalHours || 0).toFixed(2)}</div>
-            </div>
-          `
-        )
-        .join("")}
     `;
     if (summaryPageInfo) summaryPageInfo.textContent = `Page ${data.page || summaryPage} of ${summaryTotalPages}`;
     if (summaryPrevBtn) summaryPrevBtn.disabled = (data.page || summaryPage) <= 1;
