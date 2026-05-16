@@ -80,7 +80,7 @@ body {
   margin-bottom: 0;
 }
 
-.hidden { display: none; }
+.hidden { display: none !important; }
 
 h1, h2, h3 { margin: 0 0 8px; letter-spacing: 0.01em; }
 label { display: block; margin-bottom: 6px; font-weight: 600; }
@@ -175,6 +175,10 @@ button:hover {
   place-items: end center;
   padding: 14px;
   z-index: 20;
+}
+
+.admin-modal.hidden {
+  display: none !important;
 }
 
 .admin-modal-card {
