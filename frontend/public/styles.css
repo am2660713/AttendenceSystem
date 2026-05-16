@@ -476,6 +476,7 @@ select:focus {
   padding: 10px 0;
   border-bottom: 1px solid var(--line);
   font-size: 13px;
+  min-width: 760px;
 }
 
 .summary-head {
@@ -496,6 +497,12 @@ select:focus {
 
 .summary-grid.summary-head > div:last-child {
   text-align: right;
+}
+
+#summaryTable.history {
+  max-height: none;
+  overflow: visible;
+  border-top: 0;
 }
 
 .record {
@@ -643,9 +650,5 @@ select:focus {
 
   .admin-panel-section {
     min-width: 0;
-  }
-
-  #summaryTable.history {
-    max-height: none;
   }
 }
