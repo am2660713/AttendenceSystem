@@ -19,7 +19,6 @@ const newEmployeeDepartment = document.getElementById("newEmployeeDepartment");
 const addEmployeeBtn = document.getElementById("addEmployeeBtn");
 const adminMsg = document.getElementById("adminMsg");
 const employeeList = document.getElementById("employeeList");
-const adminPanelCard = document.getElementById("adminPanelCard");
 const adminPasswordInput = document.getElementById("adminPassword");
 const unlockAdminBtn = document.getElementById("unlockAdminBtn");
 const unlockMsg = document.getElementById("unlockMsg");
@@ -27,6 +26,8 @@ const lockAdminBtn = document.getElementById("lockAdminBtn");
 const adminTabBtn = document.getElementById("adminTabBtn");
 const adminModal = document.getElementById("adminModal");
 const closeAdminModalBtn = document.getElementById("closeAdminModalBtn");
+const adminPanelModal = document.getElementById("adminPanelModal");
+const closeAdminPanelBtn = document.getElementById("closeAdminPanelBtn");
 
 let currentEmployee = null;
 let adminUnlocked = localStorage.getItem("adminUnlocked") === "true";
@@ -91,8 +92,8 @@ const refresh = async () => {
 };
 
 const applyAdminVisibility = () => {
-  adminPanelCard.classList.toggle("hidden", !adminUnlocked);
   adminModal.classList.add("hidden");
+  adminPanelModal.classList.add("hidden");
   adminPasswordInput.value = "";
   unlockMsg.textContent = "";
   if (!adminUnlocked) {
@@ -193,6 +194,7 @@ unlockAdminBtn.addEventListener("click", async () => {
     adminUnlocked = true;
     localStorage.setItem("adminUnlocked", "true");
     applyAdminVisibility();
+    adminPanelModal.classList.remove("hidden");
     setMessage(adminMsg, data.message, true);
     await renderEmployees();
   } catch (error) {
@@ -208,7 +210,8 @@ lockAdminBtn.addEventListener("click", () => {
 
 adminTabBtn.addEventListener("click", () => {
   if (adminUnlocked) {
-    adminPanelCard.classList.remove("hidden");
+    adminPanelModal.classList.remove("hidden");
+    renderEmployees();
     return;
   }
   adminModal.classList.remove("hidden");
@@ -226,6 +229,16 @@ adminModal.addEventListener("click", (event) => {
     adminModal.classList.add("hidden");
     adminPasswordInput.value = "";
     unlockMsg.textContent = "";
+  }
+});
+
+closeAdminPanelBtn.addEventListener("click", () => {
+  adminPanelModal.classList.add("hidden");
+});
+
+adminPanelModal.addEventListener("click", (event) => {
+  if (event.target === adminPanelModal) {
+    adminPanelModal.classList.add("hidden");
   }
 });
 

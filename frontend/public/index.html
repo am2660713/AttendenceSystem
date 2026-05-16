@@ -45,24 +45,6 @@
         <div id="history" class="history"></div>
       </section>
 
-      <section class="card hidden admin-panel" id="adminPanelCard">
-        <div class="row between">
-          <h2>Admin Panel</h2>
-          <button id="lockAdminBtn" class="secondary small">Lock</button>
-        </div>
-        <p class="muted">Add employees and view all registered users.</p>
-        <label for="newEmployeeId">Employee ID</label>
-        <input id="newEmployeeId" placeholder="EMP004" />
-        <label for="newEmployeeName">Employee Name</label>
-        <input id="newEmployeeName" placeholder="Neha Patil" />
-        <label for="newEmployeeDepartment">Department</label>
-        <input id="newEmployeeDepartment" placeholder="Finance" />
-        <button id="addEmployeeBtn" class="primary">Add Employee</button>
-        <p id="adminMsg" class="msg"></p>
-        <h3>Employee List</h3>
-        <div id="employeeList" class="history"></div>
-      </section>
-
       <button id="adminTabBtn" class="admin-tab" type="button">Admin</button>
 
       <section class="admin-modal hidden" id="adminModal">
@@ -76,6 +58,29 @@
           <input id="adminPassword" type="password" placeholder="Enter password" />
           <button id="unlockAdminBtn" class="primary" type="button">Unlock Admin</button>
           <p id="unlockMsg" class="msg"></p>
+        </div>
+      </section>
+
+      <section class="admin-modal hidden" id="adminPanelModal">
+        <div class="admin-modal-card">
+          <div class="row between">
+            <h3>Admin Panel</h3>
+            <div class="row">
+              <button id="closeAdminPanelBtn" class="secondary small" type="button">Close</button>
+              <button id="lockAdminBtn" class="secondary small" type="button">Lock</button>
+            </div>
+          </div>
+          <p class="muted">Add employees and view all registered users.</p>
+          <label for="newEmployeeId">Employee ID</label>
+          <input id="newEmployeeId" placeholder="EMP004" />
+          <label for="newEmployeeName">Employee Name</label>
+          <input id="newEmployeeName" placeholder="Neha Patil" />
+          <label for="newEmployeeDepartment">Department</label>
+          <input id="newEmployeeDepartment" placeholder="Finance" />
+          <button id="addEmployeeBtn" class="primary" type="button">Add Employee</button>
+          <p id="adminMsg" class="msg"></p>
+          <h3>Employee List</h3>
+          <div id="employeeList" class="history"></div>
         </div>
       </section>
     </main>
