@@ -285,12 +285,12 @@ const renderSummary = async () => {
       <div class="summary-table-wrap">
         <table class="summary-table">
           <colgroup>
-            <col style="width: 32%" />
+            <col style="width: 34%" />
             <col style="width: 22%" />
             <col style="width: 10%" />
             <col style="width: 10%" />
-            <col style="width: 13%" />
-            <col style="width: 13%" />
+            <col style="width: 12%" />
+            <col style="width: 12%" />
           </colgroup>
           <thead>
             <tr>

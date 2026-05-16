@@ -585,7 +585,7 @@ select:focus {
   flex: 1 1 auto;
   min-height: 0;
   max-height: none;
-  overflow: auto;
+  overflow: visible;
   border-top: 0;
   padding-bottom: 8px;
 }
@@ -602,6 +602,7 @@ select:focus {
   width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
+  min-width: 0;
 }
 
 .summary-table thead th {
@@ -649,13 +650,13 @@ select:focus {
 
 .summary-table tbody td:nth-child(1) {
   text-align: left;
-  white-space: nowrap;
+  white-space: normal;
   font-weight: 700;
 }
 
 .summary-table tbody td:nth-child(2) {
   color: var(--muted);
-  white-space: nowrap;
+  white-space: normal;
 }
 
 .summary-employee-cell {
@@ -870,7 +871,7 @@ select:focus {
   #adminPanelModal #summaryTable.history {
     flex: 1;
     min-height: 0;
-    overflow: auto;
+    overflow: visible;
   }
 
   .summary-table {
