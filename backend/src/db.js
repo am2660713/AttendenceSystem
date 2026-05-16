@@ -75,4 +75,12 @@ export const initDb = async () => {
       UNIQUE(employee_id, attendance_date)
     );
   `);
+
+  await query(`
+    CREATE TABLE IF NOT EXISTS admin_settings (
+      setting_key TEXT PRIMARY KEY,
+      setting_value TEXT NOT NULL,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
 };

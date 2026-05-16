@@ -8,8 +8,8 @@ import { initDb, query } from "./db.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const configPath = path.join(__dirname, "..", "data", "config.json");
-const adminPassword = process.env.ADMIN_PASSWORD || "admin123";
 const adminSessions = new Map();
+const adminPasswordSeed = process.env.ADMIN_PASSWORD || "admin123";
 
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || "*")
   .split(",")
@@ -52,6 +52,29 @@ const normalizeText = (value) => String(value || "").trim().toLowerCase().replac
 const readConfig = async () => JSON.parse(await fs.readFile(configPath, "utf8"));
 const writeConfig = async (config) => {
   await fs.writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`, "utf8");
+};
+const hashAdminPassword = (password, salt = crypto.randomBytes(16).toString("hex")) => {
+  const digest = crypto.createHash("sha256").update(`${salt}:${password}`).digest("hex");
+  return `${salt}:${digest}`;
+};
+const verifyAdminPassword = (password, storedValue) => {
+  const [salt, digest] = String(storedValue || "").split(":");
+  if (!salt || !digest) return false;
+  const expected = crypto.createHash("sha256").update(`${salt}:${password}`).digest("hex");
+  return digest.length === expected.length && crypto.timingSafeEqual(Buffer.from(digest), Buffer.from(expected));
+};
+const getStoredAdminPassword = async () => {
+  const res = await query("SELECT setting_value FROM admin_settings WHERE setting_key = 'admin_password'");
+  return res.rows[0]?.setting_value || null;
+};
+const ensureAdminPassword = async () => {
+  const stored = await getStoredAdminPassword();
+  if (stored) return;
+  await query(
+    `INSERT INTO admin_settings (setting_key, setting_value)
+     VALUES ('admin_password', $1)`,
+    [hashAdminPassword(adminPasswordSeed)]
+  );
 };
 const getISTDate = (timestamp = Date.now()) => new Date(timestamp).toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
 const getISTMonth = (timestamp = Date.now()) => new Date(timestamp).toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" }).slice(0, 7);
@@ -302,13 +325,52 @@ const server = http.createServer(async (req, res) => {
         sendJson(res, 400, { message: "Password is required." }, corsOrigin);
         return;
       }
-      if (password !== adminPassword) {
+      const storedPassword = await getStoredAdminPassword();
+      if (!storedPassword || !verifyAdminPassword(password, storedPassword)) {
         sendJson(res, 401, { message: "Invalid admin password." }, corsOrigin);
         return;
       }
       const token = crypto.randomUUID();
       adminSessions.set(token, Date.now() + 8 * 60 * 60 * 1000);
       sendJson(res, 200, { message: "Admin unlocked.", token }, corsOrigin);
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/admin/change-password") {
+      if (!requireAdminSession(req, res, corsOrigin)) return;
+      const body = await parseBody(req);
+      const currentPassword = String(body.currentPassword || "");
+      const newPassword = String(body.newPassword || "");
+      const confirmPassword = String(body.confirmPassword || "");
+
+      if (!currentPassword || !newPassword || !confirmPassword) {
+        sendJson(res, 400, { message: "Current, new, and confirm password are required." }, corsOrigin);
+        return;
+      }
+      if (newPassword !== confirmPassword) {
+        sendJson(res, 400, { message: "New password and confirm password must match." }, corsOrigin);
+        return;
+      }
+      if (newPassword.length < 6) {
+        sendJson(res, 400, { message: "New password must be at least 6 characters long." }, corsOrigin);
+        return;
+      }
+
+      const storedPassword = await getStoredAdminPassword();
+      if (!storedPassword || !verifyAdminPassword(currentPassword, storedPassword)) {
+        sendJson(res, 401, { message: "Current admin password is invalid." }, corsOrigin);
+        return;
+      }
+
+      await query(
+        `INSERT INTO admin_settings (setting_key, setting_value, updated_at)
+         VALUES ('admin_password', $1, NOW())
+         ON CONFLICT (setting_key)
+         DO UPDATE SET setting_value = EXCLUDED.setting_value, updated_at = NOW()`,
+        [hashAdminPassword(newPassword)]
+      );
+
+      sendJson(res, 200, { message: "Admin password changed successfully." }, corsOrigin);
       return;
     }
 
@@ -762,6 +824,9 @@ const PORT = Number(process.env.PORT || 4000);
 initDb()
   .then(() => {
     return ensureDefaultEmployees();
+  })
+  .then(() => {
+    return ensureAdminPassword();
   })
   .then(() => {
     server.listen(PORT, () => {

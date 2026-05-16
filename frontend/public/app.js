@@ -27,6 +27,13 @@ const officeLongitudeInput = document.getElementById("officeLongitude");
 const officeRadiusInput = document.getElementById("officeRadius");
 const saveOfficeLocationBtn = document.getElementById("saveOfficeLocationBtn");
 const officeLocationMsg = document.getElementById("officeLocationMsg");
+const currentAdminPasswordInput = document.getElementById("currentAdminPassword");
+const newAdminPasswordInput = document.getElementById("newAdminPassword");
+const confirmAdminPasswordInput = document.getElementById("confirmAdminPassword");
+const toggleCurrentAdminPasswordBtn = document.getElementById("toggleCurrentAdminPasswordBtn");
+const toggleNewAdminPasswordBtn = document.getElementById("toggleNewAdminPasswordBtn");
+const changeAdminPasswordBtn = document.getElementById("changeAdminPasswordBtn");
+const changeAdminPasswordMsg = document.getElementById("changeAdminPasswordMsg");
 const employeeList = document.getElementById("employeeList");
 const summaryMonth = document.getElementById("summaryMonth");
 const summaryPageSize = document.getElementById("summaryPageSize");
@@ -150,6 +157,15 @@ const closeAdminPanels = (lock = true) => {
   adminPanelModal.classList.remove("summary-mode", "tools-mode", "list-mode");
   adminPasswordInput.value = "";
   unlockMsg.textContent = "";
+  if (currentAdminPasswordInput) currentAdminPasswordInput.value = "";
+  if (newAdminPasswordInput) newAdminPasswordInput.value = "";
+  if (confirmAdminPasswordInput) confirmAdminPasswordInput.value = "";
+  if (changeAdminPasswordMsg) changeAdminPasswordMsg.textContent = "";
+  if (toggleCurrentAdminPasswordBtn) toggleCurrentAdminPasswordBtn.textContent = "Show";
+  if (toggleNewAdminPasswordBtn) toggleNewAdminPasswordBtn.textContent = "Show";
+  if (currentAdminPasswordInput) currentAdminPasswordInput.type = "password";
+  if (newAdminPasswordInput) newAdminPasswordInput.type = "password";
+  if (confirmAdminPasswordInput) confirmAdminPasswordInput.type = "password";
   if (lock) {
     adminMsg.textContent = "";
   }
@@ -196,6 +212,14 @@ const loadOfficeSettings = async () => {
   } catch (error) {
     if (officeLocationMsg) setMessage(officeLocationMsg, error.message);
   }
+};
+
+const setPasswordFieldVisibility = (input, button) => {
+  if (!input || !button) return;
+  const isPassword = input.type === "password";
+  input.type = isPassword ? "text" : "password";
+  button.textContent = isPassword ? "Hide" : "Show";
+  button.setAttribute("aria-label", isPassword ? "Hide password" : "Show password");
 };
 
 const renderEmployees = async () => {
@@ -599,10 +623,15 @@ summaryNextBtn?.addEventListener("click", async () => {
 });
 
 toggleAdminPasswordBtn?.addEventListener("click", () => {
-  const isPassword = adminPasswordInput.type === "password";
-  adminPasswordInput.type = isPassword ? "text" : "password";
-  toggleAdminPasswordBtn.textContent = isPassword ? "Hide" : "Show";
-  toggleAdminPasswordBtn.setAttribute("aria-label", isPassword ? "Hide password" : "Show password");
+  setPasswordFieldVisibility(adminPasswordInput, toggleAdminPasswordBtn);
+});
+
+toggleCurrentAdminPasswordBtn?.addEventListener("click", () => {
+  setPasswordFieldVisibility(currentAdminPasswordInput, toggleCurrentAdminPasswordBtn);
+});
+
+toggleNewAdminPasswordBtn?.addEventListener("click", () => {
+  setPasswordFieldVisibility(newAdminPasswordInput, toggleNewAdminPasswordBtn);
 });
 
 employeePrevBtn?.addEventListener("click", async () => {
@@ -644,6 +673,40 @@ saveOfficeLocationBtn?.addEventListener("click", async () => {
     setMessage(adminMsg, "Office location updated.", true);
   } catch (error) {
     setMessage(officeLocationMsg, error.message);
+  }
+});
+
+changeAdminPasswordBtn?.addEventListener("click", async () => {
+  try {
+    if (!adminUnlocked || !adminToken) throw new Error("Unlock admin first.");
+
+    const currentPassword = currentAdminPasswordInput.value.trim();
+    const newPassword = newAdminPasswordInput.value.trim();
+    const confirmPassword = confirmAdminPasswordInput.value.trim();
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      throw new Error("Fill all password fields.");
+    }
+
+    const data = await callApi(
+      "/admin/change-password",
+      "POST",
+      { currentPassword, newPassword, confirmPassword },
+      { "x-admin-token": adminToken || "" }
+    );
+
+    setMessage(changeAdminPasswordMsg, data.message, true);
+    currentAdminPasswordInput.value = "";
+    newAdminPasswordInput.value = "";
+    confirmAdminPasswordInput.value = "";
+    if (toggleCurrentAdminPasswordBtn) toggleCurrentAdminPasswordBtn.textContent = "Show";
+    if (toggleNewAdminPasswordBtn) toggleNewAdminPasswordBtn.textContent = "Show";
+    currentAdminPasswordInput.type = "password";
+    newAdminPasswordInput.type = "password";
+    confirmAdminPasswordInput.type = "password";
+    setMessage(adminMsg, "Admin password updated.", true);
+  } catch (error) {
+    setMessage(changeAdminPasswordMsg, error.message);
   }
 });
 
