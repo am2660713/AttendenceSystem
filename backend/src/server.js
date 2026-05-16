@@ -88,6 +88,28 @@ const mapAttendance = (row) => ({
   status: row.status,
 });
 
+const defaultEmployees = [
+  { id: "EMP001", name: "Aarav Sharma", department: "Sales" },
+  { id: "EMP002", name: "Priya Verma", department: "HR" },
+  { id: "EMP003", name: "Rohit Singh", department: "Operations" },
+];
+
+const ensureDefaultEmployees = async () => {
+  const countRes = await query("SELECT COUNT(*)::int AS count FROM employees");
+  if (countRes.rows[0].count > 0) return;
+
+  for (const employee of defaultEmployees) {
+    await query(
+      `INSERT INTO employees (id, name, department)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (id) DO UPDATE
+       SET name = EXCLUDED.name,
+           department = EXCLUDED.department`,
+      [employee.id, employee.name, employee.department]
+    );
+  }
+};
+
 const server = http.createServer(async (req, res) => {
   const requestOrigin = req.headers.origin;
   const corsOrigin = getCorsOrigin(requestOrigin);
@@ -253,6 +275,9 @@ const server = http.createServer(async (req, res) => {
 const PORT = Number(process.env.PORT || 4000);
 
 initDb()
+  .then(() => {
+    return ensureDefaultEmployees();
+  })
   .then(() => {
     server.listen(PORT, () => {
       console.log(`Attendance backend running at http://localhost:${PORT}`);
