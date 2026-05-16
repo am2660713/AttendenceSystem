@@ -250,6 +250,58 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    if (req.method === "POST" && url.pathname === "/api/admin/import-employees") {
+      if (!requireAdminSession(req, res, corsOrigin)) return;
+
+      const body = await parseBody(req);
+      const employees = Array.isArray(body.employees) ? body.employees : [];
+      if (!employees.length) {
+        sendJson(res, 400, { message: "employees array is required." }, corsOrigin);
+        return;
+      }
+
+      let inserted = 0;
+      let updated = 0;
+      let skipped = 0;
+
+      for (const item of employees) {
+        const id = String(item.id || "").trim().toUpperCase();
+        const name = String(item.name || "").trim();
+        const department = String(item.department || "").trim();
+
+        if (!id || !name || !department) {
+          skipped += 1;
+          continue;
+        }
+
+        const exists = await query("SELECT id FROM employees WHERE id = $1", [id]);
+        await query(
+          `INSERT INTO employees (id, name, department)
+           VALUES ($1, $2, $3)
+           ON CONFLICT (id) DO UPDATE
+           SET name = EXCLUDED.name,
+               department = EXCLUDED.department`,
+          [id, name, department]
+        );
+
+        if (exists.rows[0]) updated += 1;
+        else inserted += 1;
+      }
+
+      sendJson(
+        res,
+        200,
+        {
+          message: "Employee import completed.",
+          inserted,
+          updated,
+          skipped,
+        },
+        corsOrigin
+      );
+      return;
+    }
+
     if (req.method === "GET" && url.pathname === "/api/admin/export-attendance") {
       if (!requireAdminSession(req, res, corsOrigin)) return;
 

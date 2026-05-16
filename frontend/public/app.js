@@ -17,6 +17,8 @@ const newEmployeeId = document.getElementById("newEmployeeId");
 const newEmployeeName = document.getElementById("newEmployeeName");
 const newEmployeeDepartment = document.getElementById("newEmployeeDepartment");
 const addEmployeeBtn = document.getElementById("addEmployeeBtn");
+const importEmployeesBtn = document.getElementById("importEmployeesBtn");
+const importEmployeesInput = document.getElementById("importEmployeesInput");
 const exportAttendanceBtn = document.getElementById("exportAttendanceBtn");
 const adminMsg = document.getElementById("adminMsg");
 const employeeList = document.getElementById("employeeList");
@@ -124,6 +126,69 @@ const renderEmployees = async () => {
     .join("");
 };
 
+const parseCsvLine = (line) => {
+  const cells = [];
+  let current = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i += 1) {
+    const char = line[i];
+    const next = line[i + 1];
+
+    if (char === '"' && inQuotes && next === '"') {
+      current += '"';
+      i += 1;
+      continue;
+    }
+
+    if (char === '"') {
+      inQuotes = !inQuotes;
+      continue;
+    }
+
+    if (char === "," && !inQuotes) {
+      cells.push(current.trim());
+      current = "";
+      continue;
+    }
+
+    current += char;
+  }
+
+  cells.push(current.trim());
+  return cells;
+};
+
+const parseEmployeesCsv = (text) => {
+  const lines = text
+    .replace(/\r/g, "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (lines.length < 2) {
+    throw new Error("CSV file is empty.");
+  }
+
+  const headers = parseCsvLine(lines[0]).map((header) => header.toLowerCase());
+  const idIndex = headers.indexOf("id");
+  const nameIndex = headers.indexOf("name");
+  const departmentIndex = headers.indexOf("department");
+
+  if (idIndex < 0 || nameIndex < 0 || departmentIndex < 0) {
+    throw new Error("CSV must include id, name, department columns.");
+  }
+
+  return lines.slice(1).map((line) => {
+    const cols = parseCsvLine(line);
+    return {
+      id: cols[idIndex] || "",
+      name: cols[nameIndex] || "",
+      department: cols[departmentIndex] || "",
+    };
+  });
+};
+
 loginBtn.addEventListener("click", async () => {
   try {
     loginMsg.textContent = "";
@@ -193,6 +258,44 @@ addEmployeeBtn.addEventListener("click", async () => {
     newEmployeeDepartment.value = "";
     await renderEmployees();
   } catch (error) {
+    setMessage(adminMsg, error.message);
+  }
+});
+
+importEmployeesBtn.addEventListener("click", () => {
+  if (!adminUnlocked || !adminToken) {
+    setMessage(adminMsg, "Unlock admin first.");
+    return;
+  }
+  importEmployeesInput.click();
+});
+
+importEmployeesInput.addEventListener("change", async () => {
+  try {
+    if (!adminUnlocked || !adminToken) throw new Error("Unlock admin first.");
+    const file = importEmployeesInput.files?.[0];
+    if (!file) return;
+
+    const text = await file.text();
+    const employees = parseEmployeesCsv(text);
+    if (!employees.length) throw new Error("No employee rows found.");
+
+    const data = await callApi(
+      "/admin/import-employees",
+      "POST",
+      { employees },
+      { "x-admin-token": adminToken || "" }
+    );
+
+    setMessage(
+      adminMsg,
+      `${data.message} Inserted: ${data.inserted}, updated: ${data.updated}, skipped: ${data.skipped}.`,
+      true
+    );
+    importEmployeesInput.value = "";
+    await renderEmployees();
+  } catch (error) {
+    importEmployeesInput.value = "";
     setMessage(adminMsg, error.message);
   }
 });
