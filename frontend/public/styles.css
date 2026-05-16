@@ -148,9 +148,15 @@ body {
 .login-card {
   position: relative;
   overflow: hidden;
+  color: #edf9fc;
   background:
-    radial-gradient(circle at top right, rgba(15, 76, 92, 0.06), transparent 22%),
-    linear-gradient(180deg, #ffffff, #f8fbfa);
+    radial-gradient(circle at 12% 12%, rgba(157, 246, 255, 0.20), transparent 24%),
+    radial-gradient(circle at 88% 18%, rgba(196, 255, 215, 0.16), transparent 22%),
+    linear-gradient(145deg, #0d3f4e, #0f5b70 55%, #123b57);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow:
+    0 24px 48px rgba(11, 43, 54, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .login-card::before {
@@ -159,7 +165,37 @@ body {
   inset: 0 auto auto 0;
   width: 100%;
   height: 4px;
-  background: linear-gradient(90deg, #0f4c5c, #12a4b2, #1f7a4f);
+  background: linear-gradient(90deg, #9bf6ff, #12a4b2, #b8ffd3);
+}
+
+.login-card h2,
+.login-card label,
+.login-card strong {
+  color: #f3fcff;
+}
+
+.login-card .muted {
+  color: rgba(235, 249, 252, 0.82);
+}
+
+.login-card input {
+  background: rgba(255, 255, 255, 0.10);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #f8feff;
+  backdrop-filter: blur(10px);
+}
+
+.login-card input::placeholder {
+  color: rgba(248, 254, 255, 0.64);
+}
+
+.login-card input:focus {
+  border-color: rgba(155, 246, 255, 0.85);
+  box-shadow: 0 0 0 3px rgba(155, 246, 255, 0.16);
+}
+
+.login-card .primary {
+  box-shadow: 0 12px 24px rgba(7, 35, 42, 0.25);
 }
 
 .login-ribbon {
