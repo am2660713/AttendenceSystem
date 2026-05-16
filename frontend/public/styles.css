@@ -470,7 +470,7 @@ select:focus {
 
 .summary-grid {
   display: grid;
-  grid-template-columns: 2fr 0.7fr 0.7fr 0.9fr 0.9fr;
+  grid-template-columns: 2fr 1fr 0.7fr 0.7fr 0.9fr 0.9fr;
   gap: 10px;
   align-items: center;
   padding: 10px 0;
@@ -487,6 +487,14 @@ select:focus {
 }
 
 .summary-grid > div:last-child {
+  text-align: right;
+}
+
+.summary-grid > div:nth-child(2) {
+  color: var(--muted);
+}
+
+.summary-grid.summary-head > div:last-child {
   text-align: right;
 }
 
@@ -625,7 +633,7 @@ select:focus {
   }
 
   .summary-grid {
-    grid-template-columns: minmax(240px, 2.2fr) repeat(4, minmax(100px, 0.7fr));
+    grid-template-columns: minmax(220px, 2fr) minmax(140px, 1fr) repeat(4, minmax(92px, 0.7fr));
   }
 
   .admin-view-pane {

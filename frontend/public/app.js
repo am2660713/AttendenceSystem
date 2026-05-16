@@ -255,6 +255,7 @@ const renderSummary = async () => {
     summaryTable.innerHTML = `
       <div class="summary-grid summary-head">
         <div>Employee</div>
+        <div>Department</div>
         <div>Present</div>
         <div>Late</div>
         <div>OT hrs</div>
@@ -266,8 +267,9 @@ const renderSummary = async () => {
             <div class="summary-grid">
               <div>
                 <strong>${item.name}</strong><br />
-                <span class="muted">${item.employeeId} | ${item.department}</span>
+                <span class="muted">Monthly report</span>
               </div>
+              <div>${item.department}</div>
               <div>${Number(item.daysPresent || 0)}</div>
               <div>${Number(item.lateDays || 0)}</div>
               <div>${Number(item.overtimeHours || 0).toFixed(2)}</div>
