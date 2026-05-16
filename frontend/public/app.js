@@ -30,7 +30,7 @@ const adminPanelModal = document.getElementById("adminPanelModal");
 const closeAdminPanelBtn = document.getElementById("closeAdminPanelBtn");
 
 let currentEmployee = null;
-let adminUnlocked = localStorage.getItem("adminUnlocked") === "true";
+let adminUnlocked = false;
 
 const setMessage = (el, text, ok = false) => {
   el.textContent = text;
@@ -92,13 +92,12 @@ const refresh = async () => {
 };
 
 const applyAdminVisibility = () => {
+  adminUnlocked = false;
   adminModal.classList.add("hidden");
   adminPanelModal.classList.add("hidden");
   adminPasswordInput.value = "";
   unlockMsg.textContent = "";
-  if (!adminUnlocked) {
-    adminMsg.textContent = "";
-  }
+  adminMsg.textContent = "";
 };
 
 const renderEmployees = async () => {
@@ -192,8 +191,9 @@ unlockAdminBtn.addEventListener("click", async () => {
     if (!password) throw new Error("Enter admin password.");
     const data = await callApi("/admin/unlock", "POST", { password });
     adminUnlocked = true;
-    localStorage.setItem("adminUnlocked", "true");
-    applyAdminVisibility();
+    adminModal.classList.add("hidden");
+    adminPasswordInput.value = "";
+    unlockMsg.textContent = "";
     adminPanelModal.classList.remove("hidden");
     setMessage(adminMsg, data.message, true);
     await renderEmployees();
@@ -203,17 +203,12 @@ unlockAdminBtn.addEventListener("click", async () => {
 });
 
 lockAdminBtn.addEventListener("click", () => {
-  adminUnlocked = false;
-  localStorage.removeItem("adminUnlocked");
   applyAdminVisibility();
 });
 
 adminTabBtn.addEventListener("click", () => {
-  if (adminUnlocked) {
-    adminPanelModal.classList.remove("hidden");
-    renderEmployees();
-    return;
-  }
+  adminUnlocked = false;
+  adminPanelModal.classList.add("hidden");
   adminModal.classList.remove("hidden");
   adminPasswordInput.focus();
 });
@@ -233,12 +228,12 @@ adminModal.addEventListener("click", (event) => {
 });
 
 closeAdminPanelBtn.addEventListener("click", () => {
-  adminPanelModal.classList.add("hidden");
+  applyAdminVisibility();
 });
 
 adminPanelModal.addEventListener("click", (event) => {
   if (event.target === adminPanelModal) {
-    adminPanelModal.classList.add("hidden");
+    applyAdminVisibility();
   }
 });
 
@@ -260,6 +255,3 @@ const bootstrap = async () => {
 
 bootstrap();
 applyAdminVisibility();
-if (adminUnlocked) {
-  renderEmployees();
-}
