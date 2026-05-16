@@ -631,13 +631,6 @@ select:focus {
   }
 }
 
-@media (max-width: 899px) {
-  .admin-tab,
-  .admin-modal {
-    display: none !important;
-  }
-}
-
 @media (min-width: 900px) {
   .admin-modal {
     place-items: center;
@@ -715,5 +708,23 @@ select:focus {
   #adminPanelModal #summaryTable.history {
     flex: 1;
     min-height: 0;
+  }
+}
+
+@media (max-width: 899px) {
+  .admin-modal {
+    place-items: end center;
+    padding: 10px;
+  }
+
+  .admin-modal-card {
+    width: min(96vw, 560px);
+    max-height: 90vh;
+  }
+
+  #adminPanelModal .admin-modal-card {
+    width: min(98vw, 760px);
+    max-height: 92vh;
+    border-radius: 18px;
   }
 }

@@ -45,7 +45,6 @@ const adminPanelModal = document.getElementById("adminPanelModal");
 const closeAdminPanelBtn = document.getElementById("closeAdminPanelBtn");
 const adminViewButtons = document.querySelectorAll("[data-admin-view-btn]");
 const adminViewPanes = document.querySelectorAll("[data-admin-view]");
-const desktopAdminQuery = window.matchMedia("(min-width: 900px)");
 
 let currentEmployee = null;
 localStorage.removeItem("adminUnlocked");
@@ -172,17 +171,6 @@ const setAdminView = (view) => {
 
 const applyAdminVisibility = () => {
   closeAdminPanels(true);
-};
-
-const syncAdminAvailability = () => {
-  const desktopAllowed = desktopAdminQuery.matches;
-  if (adminTabBtn) {
-    adminTabBtn.hidden = !desktopAllowed;
-    adminTabBtn.setAttribute("aria-hidden", String(!desktopAllowed));
-  }
-  if (!desktopAllowed) {
-    closeAdminPanels(true);
-  }
 };
 
 const renderEmployees = async () => {
@@ -628,9 +616,6 @@ lockAdminBtn.addEventListener("click", () => {
 });
 
 adminTabBtn.addEventListener("click", () => {
-  if (!desktopAdminQuery.matches) {
-    return;
-  }
   adminUnlocked = false;
   adminToken = null;
   adminPanelModal.classList.add("hidden");
@@ -684,7 +669,4 @@ const bootstrap = async () => {
 
 bootstrap();
 applyAdminVisibility();
-syncAdminAvailability();
 window.addEventListener("pageshow", applyAdminVisibility);
-desktopAdminQuery.addEventListener?.("change", syncAdminAvailability);
-window.addEventListener("resize", syncAdminAvailability);
