@@ -1,0 +1,5 @@
+[
+  { "id": "EMP001", "name": "Aarav Sharma", "department": "Sales" },
+  { "id": "EMP002", "name": "Priya Verma", "department": "HR" },
+  { "id": "EMP003", "name": "Rohit Singh", "department": "Operations" }
+]

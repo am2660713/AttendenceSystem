@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Geo Attendance</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <section class="card" id="loginCard">
+        <h1>Geo Attendance</h1>
+        <p class="muted">Location based check-in / check-out</p>
+        <label for="employeeId">Employee ID or Name</label>
+        <input id="employeeId" placeholder="EMP001 or Aarav Sharma" />
+        <button id="loginBtn">Login</button>
+        <p id="loginMsg" class="msg"></p>
+      </section>
+
+      <section class="card hidden" id="dashboardCard">
+        <div class="row between">
+          <div>
+            <h2 id="empName"></h2>
+            <p class="muted" id="empDept"></p>
+          </div>
+          <button id="logoutBtn" class="secondary">Logout</button>
+        </div>
+
+        <div class="status" id="todayStatus">No attendance yet for today.</div>
+
+        <button id="checkInBtn" class="success">Check In (Use My Location)</button>
+        <button id="checkOutBtn" class="danger">Check Out (Use My Location)</button>
+
+        <p id="actionMsg" class="msg"></p>
+
+        <h3>Recent Records</h3>
+        <div id="history" class="history"></div>
+      </section>
+    </main>
+
+    <script src="/config.js"></script>
+    <script src="/app.js"></script>
+  </body>
+</html>

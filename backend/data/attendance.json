@@ -1,0 +1,18 @@
+[
+  {
+    "employeeId": "EMP001",
+    "date": "2026-05-16",
+    "checkInAt": 1778913384286,
+    "checkOutAt": 1778913389910,
+    "totalHours": 0,
+    "status": "OUT",
+    "checkInLocation": {
+      "latitude": 18.574619,
+      "longitude": 73.954673
+    },
+    "checkOutLocation": {
+      "latitude": 18.574619,
+      "longitude": 73.954673
+    }
+  }
+]

@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: attendance-backend
+    env: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    autoDeploy: true
+    envVars:
+      - key: PGHOST
+        sync: false
+      - key: PGPORT
+        value: "5432"
+      - key: PGUSER
+        sync: false
+      - key: PGPASSWORD
+        sync: false
+      - key: PGDATABASE
+        sync: false
+      - key: ALLOWED_ORIGINS
+        sync: false
+      - key: NODE_VERSION
+        value: "22"
+
+databases:
+  - name: attendance-postgres
+    plan: free
+    databaseName: attendance_app
+    user: attendance_user
