@@ -29,6 +29,9 @@ export const initDb = async () => {
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       department TEXT NOT NULL,
+      device_token TEXT,
+      device_label TEXT,
+      device_bound_at TIMESTAMPTZ,
       active BOOLEAN NOT NULL DEFAULT TRUE,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
@@ -37,6 +40,21 @@ export const initDb = async () => {
   await query(`
     ALTER TABLE employees
     ADD COLUMN IF NOT EXISTS active BOOLEAN NOT NULL DEFAULT TRUE;
+  `);
+
+  await query(`
+    ALTER TABLE employees
+    ADD COLUMN IF NOT EXISTS device_token TEXT;
+  `);
+
+  await query(`
+    ALTER TABLE employees
+    ADD COLUMN IF NOT EXISTS device_label TEXT;
+  `);
+
+  await query(`
+    ALTER TABLE employees
+    ADD COLUMN IF NOT EXISTS device_bound_at TIMESTAMPTZ;
   `);
 
   await query(`

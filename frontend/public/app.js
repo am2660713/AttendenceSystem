@@ -40,6 +40,18 @@ let currentEmployee = null;
 localStorage.removeItem("adminUnlocked");
 let adminUnlocked = false;
 let adminToken = null;
+const deviceTokenKey = "attendanceDeviceToken";
+const getDeviceToken = () => {
+  const existing = localStorage.getItem(deviceTokenKey);
+  if (existing) return existing;
+  const token = crypto.randomUUID();
+  localStorage.setItem(deviceTokenKey, token);
+  return token;
+};
+const getDeviceLabel = () => {
+  const parts = [navigator.platform || "Unknown device", navigator.userAgent || "Browser"];
+  return parts.filter(Boolean).join(" / ").slice(0, 255);
+};
 const getISTMonthValue = () =>
   new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" }).slice(0, 7);
 
@@ -138,9 +150,17 @@ const renderEmployees = async () => {
           <div>
             <strong>${emp.id}</strong><br/>
             ${emp.name}<br/>
-            ${emp.department}
+            ${emp.department}<br/>
+            <span class="pin-badge">${
+              emp.deviceBound
+                ? `Approved company laptop${emp.deviceLabel ? `: ${emp.deviceLabel}` : ""}`
+                : "Laptop not bound yet"
+            }</span>
           </div>
-          <button class="mini-danger remove-employee-btn" data-employee-id="${emp.id}" type="button">Remove</button>
+          <div class="employee-actions">
+            <button class="mini-secondary reset-device-btn" data-employee-id="${emp.id}" type="button">Reset Laptop</button>
+            <button class="mini-danger remove-employee-btn" data-employee-id="${emp.id}" type="button">Remove</button>
+          </div>
         </div>`
     )
     .join("");
@@ -283,7 +303,11 @@ loginBtn.addEventListener("click", async () => {
     const employeeId = employeeIdInput.value.trim().toUpperCase();
     if (!employeeId) throw new Error("Enter employee ID");
 
-    const { employee } = await callApi("/auth/login", "POST", { employeeId });
+    const { employee, message } = await callApi("/auth/login", "POST", {
+      employeeId,
+      deviceToken: getDeviceToken(),
+      deviceLabel: getDeviceLabel(),
+    });
     currentEmployee = employee;
     localStorage.setItem("attendanceEmployee", JSON.stringify(employee));
 
@@ -294,7 +318,7 @@ loginBtn.addEventListener("click", async () => {
     dashboardCard.classList.remove("hidden");
 
     await refresh();
-    setMessage(loginMsg, "Login successful", true);
+    setMessage(loginMsg, message || "Login successful", true);
   } catch (error) {
     setMessage(loginMsg, error.message);
   }
@@ -352,24 +376,34 @@ addEmployeeBtn.addEventListener("click", async () => {
 });
 
 employeeList.addEventListener("click", async (event) => {
+  const resetButton = event.target.closest(".reset-device-btn");
   const button = event.target.closest(".remove-employee-btn");
-  if (!button) return;
+  if (!resetButton && !button) return;
 
-  const employeeId = button.dataset.employeeId;
+  const employeeId = (resetButton || button).dataset.employeeId;
   if (!employeeId) return;
 
-  if (!window.confirm(`Remove ${employeeId}? This will deactivate the employee, but keep past attendance records.`)) {
-    return;
-  }
-
   try {
-    const data = await callApi(
-      "/admin/remove-employee",
-      "POST",
-      { id: employeeId },
-      { "x-admin-token": adminToken || "" }
-    );
-    setMessage(adminMsg, data.message, true);
+    if (resetButton) {
+      const data = await callApi(
+        "/admin/reset-device",
+        "POST",
+        { id: employeeId },
+        { "x-admin-token": adminToken || "" }
+      );
+      setMessage(adminMsg, data.message, true);
+    } else {
+      if (!window.confirm(`Remove ${employeeId}? This will deactivate the employee, but keep past attendance records.`)) {
+        return;
+      }
+      const data = await callApi(
+        "/admin/remove-employee",
+        "POST",
+        { id: employeeId },
+        { "x-admin-token": adminToken || "" }
+      );
+      setMessage(adminMsg, data.message, true);
+    }
     await renderEmployees();
     await renderSummary();
   } catch (error) {

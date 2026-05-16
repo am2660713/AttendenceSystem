@@ -242,18 +242,45 @@ const server = http.createServer(async (req, res) => {
 
     if (req.method === "POST" && url.pathname === "/api/auth/login") {
       const body = await parseBody(req);
-      const rawInput = String(body.employeeId || "").trim();
+      const rawInput = String(body.employeeId || "").trim().toUpperCase();
+      const deviceToken = String(body.deviceToken || "").trim();
+      const deviceLabel = String(body.deviceLabel || "").trim().slice(0, 255);
       if (!rawInput) return sendJson(res, 400, { message: "Employee ID is required." }, corsOrigin);
+      if (!deviceToken) return sendJson(res, 400, { message: "Device information is required." }, corsOrigin);
 
-      const dbRes = await query("SELECT id, name, department FROM employees WHERE active = true");
-      const employee = dbRes.rows.find((item) => {
-        const idMatch = normalizeText(item.id) === normalizeText(rawInput);
-        const nameMatch = normalizeText(item.name) === normalizeText(rawInput);
-        return idMatch || nameMatch;
-      });
+      const dbRes = await query(
+        "SELECT id, name, department, device_token, device_label FROM employees WHERE active = true AND id = $1",
+        [rawInput]
+      );
+      const employee = dbRes.rows[0];
 
       if (!employee) return sendJson(res, 404, { message: "Employee not found." }, corsOrigin);
-      sendJson(res, 200, { employee }, corsOrigin);
+      if (employee.device_token && employee.device_token !== deviceToken) {
+        return sendJson(res, 403, { message: "This employee is locked to another company laptop." }, corsOrigin);
+      }
+
+      if (!employee.device_token) {
+        await query(
+          `UPDATE employees
+           SET device_token = $2,
+               device_label = $3,
+               device_bound_at = NOW()
+           WHERE id = $1`,
+          [employee.id, deviceToken, deviceLabel || "Approved company laptop"]
+        );
+      }
+
+      sendJson(
+        res,
+        200,
+        {
+          message: employee.device_token
+            ? "Company laptop verified. Login successful."
+            : "Company laptop approved and login successful.",
+          employee: { id: employee.id, name: employee.name, department: employee.department },
+        },
+        corsOrigin
+      );
       return;
     }
 
@@ -276,8 +303,21 @@ const server = http.createServer(async (req, res) => {
 
     if (req.method === "GET" && url.pathname === "/api/employees") {
       if (!requireAdminSession(req, res, corsOrigin)) return;
-      const dbRes = await query("SELECT id, name, department FROM employees WHERE active = true ORDER BY id");
-      sendJson(res, 200, { employees: dbRes.rows }, corsOrigin);
+      const dbRes = await query(
+        "SELECT id, name, department, device_token, device_label, device_bound_at FROM employees WHERE active = true ORDER BY id"
+      );
+      sendJson(
+        res,
+        200,
+        {
+          employees: dbRes.rows.map((employee) => ({
+            ...employee,
+            deviceBound: Boolean(employee.device_token),
+            deviceLabel: employee.device_label || "",
+          })),
+        },
+        corsOrigin
+      );
       return;
     }
 
@@ -293,17 +333,17 @@ const server = http.createServer(async (req, res) => {
         return;
       }
 
-      const exists = await query("SELECT id, active FROM employees WHERE id = $1", [id]);
+      const exists = await query("SELECT id, active, device_token, device_label, device_bound_at FROM employees WHERE id = $1", [id]);
 
       const insertRes = await query(
-        `INSERT INTO employees (id, name, department, active)
-         VALUES ($1, $2, $3, true)
+        `INSERT INTO employees (id, name, department, active, device_token, device_label, device_bound_at)
+         VALUES ($1, $2, $3, true, $4, $5, $6)
          ON CONFLICT (id) DO UPDATE
          SET name = EXCLUDED.name,
              department = EXCLUDED.department,
              active = true
          RETURNING id, name, department`,
-        [id, name, department]
+        [id, name, department, exists.rows[0]?.device_token || null, exists.rows[0]?.device_label || null, exists.rows[0]?.device_bound_at || null]
       );
 
       sendJson(
@@ -330,8 +370,28 @@ const server = http.createServer(async (req, res) => {
         return;
       }
 
-      await query("UPDATE employees SET active = false WHERE id = $1", [id]);
+      await query("UPDATE employees SET active = false, device_token = NULL, device_label = NULL, device_bound_at = NULL WHERE id = $1", [id]);
       sendJson(res, 200, { message: "Employee removed successfully." }, corsOrigin);
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/admin/reset-device") {
+      if (!requireAdminSession(req, res, corsOrigin)) return;
+      const body = await parseBody(req);
+      const id = String(body.id || "").trim().toUpperCase();
+      if (!id) {
+        sendJson(res, 400, { message: "Employee ID is required." }, corsOrigin);
+        return;
+      }
+
+      const exists = await query("SELECT id FROM employees WHERE id = $1 AND active = true", [id]);
+      if (!exists.rows[0]) {
+        sendJson(res, 404, { message: "Employee not found or inactive." }, corsOrigin);
+        return;
+      }
+
+      await query("UPDATE employees SET device_token = NULL, device_label = NULL, device_bound_at = NULL WHERE id = $1", [id]);
+      sendJson(res, 200, { message: "Company laptop binding reset successfully." }, corsOrigin);
       return;
     }
 
