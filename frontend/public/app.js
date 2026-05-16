@@ -30,6 +30,7 @@ const adminPanelModal = document.getElementById("adminPanelModal");
 const closeAdminPanelBtn = document.getElementById("closeAdminPanelBtn");
 
 let currentEmployee = null;
+localStorage.removeItem("adminUnlocked");
 let adminUnlocked = false;
 
 const setMessage = (el, text, ok = false) => {
@@ -91,13 +92,21 @@ const refresh = async () => {
   await Promise.all([renderToday(), renderHistory()]);
 };
 
-const applyAdminVisibility = () => {
-  adminUnlocked = false;
+const closeAdminPanels = (lock = true) => {
+  if (lock) {
+    adminUnlocked = false;
+  }
   adminModal.classList.add("hidden");
   adminPanelModal.classList.add("hidden");
   adminPasswordInput.value = "";
   unlockMsg.textContent = "";
-  adminMsg.textContent = "";
+  if (lock) {
+    adminMsg.textContent = "";
+  }
+};
+
+const applyAdminVisibility = () => {
+  closeAdminPanels(true);
 };
 
 const renderEmployees = async () => {
@@ -203,7 +212,7 @@ unlockAdminBtn.addEventListener("click", async () => {
 });
 
 lockAdminBtn.addEventListener("click", () => {
-  applyAdminVisibility();
+  closeAdminPanels(true);
 });
 
 adminTabBtn.addEventListener("click", () => {
@@ -214,26 +223,28 @@ adminTabBtn.addEventListener("click", () => {
 });
 
 closeAdminModalBtn.addEventListener("click", () => {
-  adminModal.classList.add("hidden");
-  adminPasswordInput.value = "";
-  unlockMsg.textContent = "";
+  closeAdminPanels(true);
 });
 
 adminModal.addEventListener("click", (event) => {
   if (event.target === adminModal) {
-    adminModal.classList.add("hidden");
-    adminPasswordInput.value = "";
-    unlockMsg.textContent = "";
+    closeAdminPanels(true);
   }
 });
 
 closeAdminPanelBtn.addEventListener("click", () => {
-  applyAdminVisibility();
+  closeAdminPanels(true);
 });
 
 adminPanelModal.addEventListener("click", (event) => {
   if (event.target === adminPanelModal) {
-    applyAdminVisibility();
+    closeAdminPanels(true);
+  }
+});
+
+window.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    closeAdminPanels(true);
   }
 });
 
@@ -255,3 +266,4 @@ const bootstrap = async () => {
 
 bootstrap();
 applyAdminVisibility();
+window.addEventListener("pageshow", applyAdminVisibility);
