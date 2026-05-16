@@ -21,6 +21,12 @@ const importEmployeesBtn = document.getElementById("importEmployeesBtn");
 const importEmployeesInput = document.getElementById("importEmployeesInput");
 const exportAttendanceBtn = document.getElementById("exportAttendanceBtn");
 const adminMsg = document.getElementById("adminMsg");
+const officeNameInput = document.getElementById("officeName");
+const officeLatitudeInput = document.getElementById("officeLatitude");
+const officeLongitudeInput = document.getElementById("officeLongitude");
+const officeRadiusInput = document.getElementById("officeRadius");
+const saveOfficeLocationBtn = document.getElementById("saveOfficeLocationBtn");
+const officeLocationMsg = document.getElementById("officeLocationMsg");
 const employeeList = document.getElementById("employeeList");
 const summaryMonth = document.getElementById("summaryMonth");
 const summaryPageSize = document.getElementById("summaryPageSize");
@@ -166,11 +172,29 @@ const setAdminView = (view) => {
   } else if (view === "list") {
     employeePage = 1;
     renderEmployees();
+  } else if (view === "tools") {
+    loadOfficeSettings();
   }
 };
 
 const applyAdminVisibility = () => {
   closeAdminPanels(true);
+};
+
+const loadOfficeSettings = async () => {
+  if (!officeNameInput || !officeLatitudeInput || !officeLongitudeInput || !officeRadiusInput) return;
+
+  try {
+    const config = await callApi("/config");
+    const office = config.office || {};
+    officeNameInput.value = office.name || "";
+    officeLatitudeInput.value = office.latitude ?? "";
+    officeLongitudeInput.value = office.longitude ?? "";
+    officeRadiusInput.value = office.radiusMeters ?? "";
+    if (officeLocationMsg) officeLocationMsg.textContent = "";
+  } catch (error) {
+    if (officeLocationMsg) setMessage(officeLocationMsg, error.message);
+  }
 };
 
 const renderEmployees = async () => {
@@ -525,6 +549,7 @@ unlockAdminBtn.addEventListener("click", async () => {
     employeePage = 1;
     await renderEmployees();
     await renderSummary();
+    await loadOfficeSettings();
   } catch (error) {
     setMessage(unlockMsg, error.message);
   }
@@ -570,6 +595,34 @@ employeeNextBtn?.addEventListener("click", async () => {
   if (employeePage < employeeTotalPages) {
     employeePage += 1;
     await renderEmployees();
+  }
+});
+
+saveOfficeLocationBtn?.addEventListener("click", async () => {
+  try {
+    if (!adminUnlocked || !adminToken) throw new Error("Unlock admin first.");
+
+    const name = officeNameInput.value.trim();
+    const latitude = Number(officeLatitudeInput.value);
+    const longitude = Number(officeLongitudeInput.value);
+    const radiusMeters = Number(officeRadiusInput.value);
+
+    if (!name) throw new Error("Office name is required.");
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || !Number.isFinite(radiusMeters)) {
+      throw new Error("Enter valid latitude, longitude, and radius.");
+    }
+
+    const data = await callApi(
+      "/admin/update-office",
+      "POST",
+      { name, latitude, longitude, radiusMeters },
+      { "x-admin-token": adminToken || "" }
+    );
+
+    setMessage(officeLocationMsg, data.message, true);
+    setMessage(adminMsg, "Office location updated.", true);
+  } catch (error) {
+    setMessage(officeLocationMsg, error.message);
   }
 });
 

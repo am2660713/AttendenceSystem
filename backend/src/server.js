@@ -50,6 +50,9 @@ const sendCsv = (res, csv, origin = "*", filename = "attendance-export.csv") => 
 
 const normalizeText = (value) => String(value || "").trim().toLowerCase().replace(/\s+/g, "");
 const readConfig = async () => JSON.parse(await fs.readFile(configPath, "utf8"));
+const writeConfig = async (config) => {
+  await fs.writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`, "utf8");
+};
 const getISTDate = (timestamp = Date.now()) => new Date(timestamp).toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
 const getISTMonth = (timestamp = Date.now()) => new Date(timestamp).toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" }).slice(0, 7);
 
@@ -412,6 +415,42 @@ const server = http.createServer(async (req, res) => {
 
       await query("UPDATE employees SET device_token = NULL, device_label = NULL, device_bound_at = NULL WHERE id = $1", [id]);
       sendJson(res, 200, { message: "Company laptop binding reset successfully." }, corsOrigin);
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/admin/update-office") {
+      if (!requireAdminSession(req, res, corsOrigin)) return;
+
+      const body = await parseBody(req);
+      const name = String(body.name || "").trim();
+      const latitude = Number(body.latitude);
+      const longitude = Number(body.longitude);
+      const radiusMeters = Number(body.radiusMeters);
+
+      if (!name) {
+        sendJson(res, 400, { message: "Office name is required." }, corsOrigin);
+        return;
+      }
+      if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || !Number.isFinite(radiusMeters)) {
+        sendJson(res, 400, { message: "Valid latitude, longitude, and radius are required." }, corsOrigin);
+        return;
+      }
+      if (radiusMeters < 10 || radiusMeters > 5000) {
+        sendJson(res, 400, { message: "Radius must be between 10 and 5000 meters." }, corsOrigin);
+        return;
+      }
+
+      const config = await readConfig();
+      config.office = {
+        ...(config.office || {}),
+        name,
+        latitude,
+        longitude,
+        radiusMeters,
+      };
+
+      await writeConfig(config);
+      sendJson(res, 200, { message: "Office location updated successfully.", office: config.office }, corsOrigin);
       return;
     }
 

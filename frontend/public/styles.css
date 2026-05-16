@@ -420,6 +420,14 @@ button:hover {
   gap: 8px;
 }
 
+.admin-subsection {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
 .full-width {
   grid-column: 1 / -1;
 }

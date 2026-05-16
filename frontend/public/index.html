@@ -124,6 +124,20 @@
               <input id="importEmployeesInput" type="file" accept=".csv,text/csv" class="hidden" />
               <button id="exportAttendanceBtn" class="secondary full" type="button">Download Attendance Excel</button>
               <p id="adminMsg" class="msg"></p>
+
+              <div class="admin-subsection">
+                <h3>Office Location</h3>
+                <label for="officeName">Office Name</label>
+                <input id="officeName" placeholder="Main Office" />
+                <label for="officeLatitude">Latitude</label>
+                <input id="officeLatitude" type="number" step="any" placeholder="18.574619" />
+                <label for="officeLongitude">Longitude</label>
+                <input id="officeLongitude" type="number" step="any" placeholder="73.954673" />
+                <label for="officeRadius">Radius in meters</label>
+                <input id="officeRadius" type="number" step="1" min="10" max="5000" placeholder="150" />
+                <button id="saveOfficeLocationBtn" class="secondary full" type="button">Save Office Location</button>
+                <p id="officeLocationMsg" class="msg"></p>
+              </div>
             </section>
 
             <section class="admin-panel-section admin-view-pane hidden" data-admin-view="summary">
