@@ -51,6 +51,7 @@ const sendCsv = (res, csv, origin = "*", filename = "attendance-export.csv") => 
 const normalizeText = (value) => String(value || "").trim().toLowerCase().replace(/\s+/g, "");
 const readConfig = async () => JSON.parse(await fs.readFile(configPath, "utf8"));
 const getISTDate = (timestamp = Date.now()) => new Date(timestamp).toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
+const getISTMonth = (timestamp = Date.now()) => new Date(timestamp).toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" }).slice(0, 7);
 
 const toISTDateTime = (timestamp) => {
   if (!timestamp) return null;
@@ -64,6 +65,25 @@ const toISTDateTime = (timestamp) => {
     second: "2-digit",
     hour12: true,
   });
+};
+
+const parseISTDateTime = (dateString, timeString) => new Date(`${dateString}T${timeString}:00+05:30`).getTime();
+
+const toMinutes = (hhmm) => {
+  const [hours, minutes] = String(hhmm || "0:0").split(":").map((part) => Number(part));
+  return (hours * 60) + minutes;
+};
+
+const padTwo = (value) => String(value).padStart(2, "0");
+
+const getMonthBounds = (month) => {
+  const safeMonth = /^\d{4}-\d{2}$/.test(month) ? month : getISTMonth();
+  const start = new Date(`${safeMonth}-01T00:00:00+05:30`).getTime();
+  const [year, monthPart] = safeMonth.split("-").map(Number);
+  const nextMonthStart = monthPart === 12
+    ? new Date(`${year + 1}-01-01T00:00:00+05:30`).getTime()
+    : new Date(`${year}-${padTwo(monthPart + 1)}-01T00:00:00+05:30`).getTime();
+  return { start, end: nextMonthStart, month: safeMonth };
 };
 
 const haversineMeters = (lat1, lon1, lat2, lon2) => {
@@ -118,13 +138,53 @@ const requireAdminSession = (req, res, origin) => {
   return token;
 };
 
-const mapAttendance = (row) => ({
-  date: row.attendance_date,
-  checkInAt: toISTDateTime(row.check_in_at),
-  checkOutAt: toISTDateTime(row.check_out_at),
-  totalHours: Number(row.total_hours),
-  status: row.status,
-});
+const mapAttendance = (row, config) => {
+  const metrics = config ? buildDailyMetrics(row, config) : null;
+  return {
+    date: row.attendance_date,
+    checkInAt: toISTDateTime(row.check_in_at),
+    checkOutAt: toISTDateTime(row.check_out_at),
+    totalHours: Number(row.total_hours),
+    status: row.status,
+    lateByMinutes: metrics?.lateByMinutes || 0,
+    overtimeMinutes: metrics?.overtimeMinutes || 0,
+    lateMark: metrics?.lateMark || false,
+    overtimeHours: metrics?.overtimeHours || 0,
+  };
+};
+
+const buildDailyMetrics = (row, config) => {
+  const shiftStartMinutes = toMinutes(config.shift?.start || "09:30");
+  const shiftEndMinutes = toMinutes(config.shift?.end || "18:30");
+  const graceMinutes = Number(config.shift?.graceMinutes || 0);
+  const lateThreshold = shiftStartMinutes + graceMinutes;
+  const lateThresholdTime = `${padTwo(Math.floor(lateThreshold / 60))}:${padTwo(lateThreshold % 60)}`;
+  const dayStart = parseISTDateTime(row.attendance_date, "00:00");
+  const checkInTime = row.check_in_at ? Number(row.check_in_at) : null;
+  const checkOutTime = row.check_out_at ? Number(row.check_out_at) : null;
+  const shiftStartTime = parseISTDateTime(row.attendance_date, config.shift?.start || "09:30");
+  const shiftEndTime = parseISTDateTime(row.attendance_date, config.shift?.end || "18:30");
+  const thresholdTime = parseISTDateTime(row.attendance_date, lateThresholdTime);
+
+  const lateByMinutes = checkInTime && checkInTime > thresholdTime
+    ? Math.round((checkInTime - thresholdTime) / 60000)
+    : 0;
+
+  const overtimeMinutes = checkOutTime && checkOutTime > shiftEndTime
+    ? Math.round((checkOutTime - shiftEndTime) / 60000)
+    : 0;
+
+  return {
+    dayStart,
+    shiftStartTime,
+    shiftEndTime,
+    lateByMinutes,
+    overtimeMinutes,
+    lateMark: lateByMinutes > 0,
+    overtimeHours: Number((overtimeMinutes / 60).toFixed(2)),
+    lateThresholdTime,
+  };
+};
 
 const defaultEmployees = [
   { id: "EMP001", name: "Aarav Sharma", department: "Sales" },
@@ -378,6 +438,7 @@ const server = http.createServer(async (req, res) => {
       if (!employeeId) return sendJson(res, 400, { message: "employeeId is required." }, corsOrigin);
 
       const today = getISTDate();
+      const config = await readConfig();
       const dbRes = await query(
         `SELECT attendance_date, check_in_at, check_out_at, total_hours, status
          FROM attendance
@@ -385,7 +446,7 @@ const server = http.createServer(async (req, res) => {
         [employeeId, today]
       );
 
-      sendJson(res, 200, { today, record: dbRes.rows[0] ? mapAttendance(dbRes.rows[0]) : null }, corsOrigin);
+      sendJson(res, 200, { today, record: dbRes.rows[0] ? mapAttendance(dbRes.rows[0], config) : null }, corsOrigin);
       return;
     }
 
@@ -393,6 +454,7 @@ const server = http.createServer(async (req, res) => {
       const employeeId = String(url.searchParams.get("employeeId") || "").trim().toUpperCase();
       if (!employeeId) return sendJson(res, 400, { message: "employeeId is required." }, corsOrigin);
 
+      const config = await readConfig();
       const dbRes = await query(
         `SELECT attendance_date, check_in_at, check_out_at, total_hours, status
          FROM attendance
@@ -402,7 +464,62 @@ const server = http.createServer(async (req, res) => {
         [employeeId]
       );
 
-      sendJson(res, 200, { records: dbRes.rows.map(mapAttendance) }, corsOrigin);
+      sendJson(res, 200, { records: dbRes.rows.map((row) => mapAttendance(row, config)) }, corsOrigin);
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/admin/monthly-summary") {
+      if (!requireAdminSession(req, res, corsOrigin)) return;
+
+      const month = String(url.searchParams.get("month") || "").trim();
+      const config = await readConfig();
+      const { start, end, month: safeMonth } = getMonthBounds(month);
+
+      const [employeesRes, attendanceRes] = await Promise.all([
+        query("SELECT id, name, department FROM employees WHERE active = true ORDER BY id"),
+        query(
+          `SELECT a.employee_id, a.attendance_date, a.check_in_at, a.check_out_at, a.total_hours, a.status
+           FROM attendance a
+           WHERE a.check_in_at >= $1 AND a.check_in_at < $2
+           ORDER BY a.employee_id ASC, a.attendance_date ASC`,
+          [start, end]
+        ),
+      ]);
+
+      const summary = new Map(
+        employeesRes.rows.map((employee) => [
+          employee.id,
+          {
+            employeeId: employee.id,
+            name: employee.name,
+            department: employee.department,
+            daysPresent: 0,
+            lateDays: 0,
+            overtimeHours: 0,
+            totalHours: 0,
+          },
+        ])
+      );
+
+      for (const row of attendanceRes.rows) {
+        const employee = summary.get(row.employee_id);
+        if (!employee) continue;
+
+        const metrics = buildDailyMetrics(row, config);
+        employee.daysPresent += 1;
+        employee.totalHours += Number(row.total_hours || 0);
+        employee.overtimeHours += metrics.overtimeHours;
+        if (metrics.lateMark) employee.lateDays += 1;
+      }
+
+      const records = Array.from(summary.values()).map((item) => ({
+        ...item,
+        totalHours: Number(item.totalHours.toFixed(2)),
+        overtimeHours: Number(item.overtimeHours.toFixed(2)),
+        month: safeMonth,
+      }));
+
+      sendJson(res, 200, { month: safeMonth, shift: config.shift || null, records }, corsOrigin);
       return;
     }
 
@@ -455,7 +572,7 @@ const server = http.createServer(async (req, res) => {
           [employeeId, today, now, latitude, longitude]
         );
 
-        sendJson(res, 200, { message: "Check-in marked successfully.", record: mapAttendance(insertRes.rows[0]) }, corsOrigin);
+        sendJson(res, 200, { message: "Check-in marked successfully.", record: mapAttendance(insertRes.rows[0], config) }, corsOrigin);
         return;
       }
 
@@ -491,7 +608,7 @@ const server = http.createServer(async (req, res) => {
           message: existing.check_out_at
             ? "Check-out updated successfully."
             : "Check-out marked successfully.",
-          record: mapAttendance(updateRes.rows[0]),
+          record: mapAttendance(updateRes.rows[0], config),
         },
         corsOrigin
       );

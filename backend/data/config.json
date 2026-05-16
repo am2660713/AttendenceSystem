@@ -5,5 +5,10 @@
     "longitude": 73.954673,
     "radiusMeters": 150
   },
-  "timezone": "Asia/Kolkata"
+  "timezone": "Asia/Kolkata",
+  "shift": {
+    "start": "09:30",
+    "end": "18:30",
+    "graceMinutes": 15
+  }
 }

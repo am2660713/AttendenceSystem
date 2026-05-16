@@ -157,6 +157,28 @@ button:hover {
   overflow: auto;
 }
 
+.summary-grid {
+  display: grid;
+  grid-template-columns: 2fr 0.7fr 0.7fr 0.9fr 0.9fr;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+}
+
+.summary-head {
+  font-weight: 700;
+  color: var(--primary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 12px;
+}
+
+.summary-grid > div:last-child {
+  text-align: right;
+}
+
 .record {
   padding: 10px 0;
   border-bottom: 1px solid var(--line);
@@ -213,6 +235,8 @@ button:hover {
   padding: 16px;
   border: 1px solid var(--line);
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.2);
+  max-height: 88vh;
+  overflow: auto;
   animation: panelIn 0.22s ease-out;
 }
 
@@ -227,4 +251,8 @@ button:hover {
   .action-grid { grid-template-columns: 1fr; }
   .admin-panel { right: 10px; bottom: 68px; }
   .admin-tab { right: 10px; bottom: 10px; }
+  .summary-grid {
+    grid-template-columns: 1fr 0.6fr 0.6fr 0.7fr 0.8fr;
+    gap: 8px;
+  }
 }

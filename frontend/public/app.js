@@ -22,6 +22,10 @@ const importEmployeesInput = document.getElementById("importEmployeesInput");
 const exportAttendanceBtn = document.getElementById("exportAttendanceBtn");
 const adminMsg = document.getElementById("adminMsg");
 const employeeList = document.getElementById("employeeList");
+const summaryMonth = document.getElementById("summaryMonth");
+const loadSummaryBtn = document.getElementById("loadSummaryBtn");
+const summaryStats = document.getElementById("summaryStats");
+const summaryTable = document.getElementById("summaryTable");
 const adminPasswordInput = document.getElementById("adminPassword");
 const unlockAdminBtn = document.getElementById("unlockAdminBtn");
 const unlockMsg = document.getElementById("unlockMsg");
@@ -36,6 +40,12 @@ let currentEmployee = null;
 localStorage.removeItem("adminUnlocked");
 let adminUnlocked = false;
 let adminToken = null;
+const getISTMonthValue = () =>
+  new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" }).slice(0, 7);
+
+if (summaryMonth) {
+  summaryMonth.value = getISTMonthValue();
+}
 
 const setMessage = (el, text, ok = false) => {
   el.textContent = text;
@@ -134,6 +144,74 @@ const renderEmployees = async () => {
         </div>`
     )
     .join("");
+};
+
+const renderSummary = async () => {
+  if (!summaryMonth || !summaryStats || !summaryTable) return;
+  if (!adminUnlocked || !adminToken) {
+    summaryStats.textContent = "Unlock admin to view HR monthly summary.";
+    summaryTable.innerHTML = "<p class='muted'>Monthly summary is available after admin unlock.</p>";
+    return;
+  }
+
+  try {
+    const month = summaryMonth.value || getISTMonthValue();
+    const data = await callApi(`/admin/monthly-summary?month=${encodeURIComponent(month)}`, "GET", undefined, {
+      "x-admin-token": adminToken || "",
+    });
+
+    const records = Array.isArray(data.records) ? data.records : [];
+    const lateDays = records.reduce((total, item) => total + Number(item.lateDays || 0), 0);
+    const overtimeHours = records.reduce((total, item) => total + Number(item.overtimeHours || 0), 0);
+    const totalPresentDays = records.reduce((total, item) => total + Number(item.daysPresent || 0), 0);
+    const shift = data.shift || {};
+    const shiftText = shift.start && shift.end
+      ? `${shift.start} - ${shift.end} (Grace ${Number(shift.graceMinutes || 0)} mins)`
+      : "Shift rules not configured";
+
+    summaryStats.innerHTML = `
+      <strong>Month:</strong> ${data.month}
+      &nbsp; | &nbsp;<strong>Shift:</strong> ${shiftText}
+      &nbsp; | &nbsp;<strong>Employees:</strong> ${records.length}
+      &nbsp; | &nbsp;<strong>Present days:</strong> ${totalPresentDays}
+      &nbsp; | &nbsp;<strong>Late days:</strong> ${lateDays}
+      &nbsp; | &nbsp;<strong>Overtime hrs:</strong> ${overtimeHours.toFixed(2)}
+    `;
+
+    if (!records.length) {
+      summaryTable.innerHTML = "<p class='muted'>No monthly attendance found for this period.</p>";
+      return;
+    }
+
+    summaryTable.innerHTML = `
+      <div class="summary-grid summary-head">
+        <div>Employee</div>
+        <div>Present</div>
+        <div>Late</div>
+        <div>OT hrs</div>
+        <div>Total hrs</div>
+      </div>
+      ${records
+        .map(
+          (item) => `
+            <div class="summary-grid">
+              <div>
+                <strong>${item.name}</strong><br />
+                <span class="muted">${item.employeeId} | ${item.department}</span>
+              </div>
+              <div>${Number(item.daysPresent || 0)}</div>
+              <div>${Number(item.lateDays || 0)}</div>
+              <div>${Number(item.overtimeHours || 0).toFixed(2)}</div>
+              <div>${Number(item.totalHours || 0).toFixed(2)}</div>
+            </div>
+          `
+        )
+        .join("")}
+    `;
+  } catch (error) {
+    summaryStats.textContent = "";
+    summaryTable.innerHTML = `<p class='msg'>${error.message}</p>`;
+  }
 };
 
 const parseCsvLine = (line) => {
@@ -267,6 +345,7 @@ addEmployeeBtn.addEventListener("click", async () => {
     newEmployeeName.value = "";
     newEmployeeDepartment.value = "";
     await renderEmployees();
+    await renderSummary();
   } catch (error) {
     setMessage(adminMsg, error.message);
   }
@@ -292,6 +371,7 @@ employeeList.addEventListener("click", async (event) => {
     );
     setMessage(adminMsg, data.message, true);
     await renderEmployees();
+    await renderSummary();
   } catch (error) {
     setMessage(adminMsg, error.message);
   }
@@ -329,6 +409,7 @@ importEmployeesInput.addEventListener("change", async () => {
     );
     importEmployeesInput.value = "";
     await renderEmployees();
+    await renderSummary();
   } catch (error) {
     importEmployeesInput.value = "";
     setMessage(adminMsg, error.message);
@@ -348,9 +429,14 @@ unlockAdminBtn.addEventListener("click", async () => {
     adminPanelModal.classList.remove("hidden");
     setMessage(adminMsg, data.message, true);
     await renderEmployees();
+    await renderSummary();
   } catch (error) {
     setMessage(unlockMsg, error.message);
   }
+});
+
+loadSummaryBtn.addEventListener("click", async () => {
+  await renderSummary();
 });
 
 exportAttendanceBtn.addEventListener("click", async () => {
