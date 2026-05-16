@@ -21,16 +21,40 @@
       </section>
 
       <section class="card login-card" id="loginCard">
-        <div class="login-ribbon">
-          <span>Secure Access</span>
-          <strong>One tap login for employees</strong>
+        <div class="login-layout">
+          <aside class="login-visual">
+            <p class="login-kicker">Secure Access</p>
+            <h2>Company laptop attendance, made simple.</h2>
+            <p class="login-copy">
+              Employee login is bound to the approved company laptop so attendance stays clean and harder to fake.
+            </p>
+            <div class="login-points">
+              <div>
+                <strong>One device</strong>
+                <span>Approved laptop binding</span>
+              </div>
+              <div>
+                <strong>Office first</strong>
+                <span>Location check before punch</span>
+              </div>
+              <div>
+                <strong>HR control</strong>
+                <span>Reset laptop access anytime</span>
+              </div>
+            </div>
+          </aside>
+
+          <div class="login-form">
+            <div class="login-ribbon">
+              <span>Employee Portal</span>
+              <strong>Sign in with your company laptop</strong>
+            </div>
+            <label for="employeeId">Employee ID</label>
+            <input id="employeeId" placeholder="EMP001" />
+            <button id="loginBtn" class="primary">Login</button>
+            <p id="loginMsg" class="msg"></p>
+          </div>
         </div>
-        <h2>Employee Login</h2>
-        <p class="muted">Use employee ID from your approved company laptop. The first successful login binds that device.</p>
-        <label for="employeeId">Employee ID</label>
-        <input id="employeeId" placeholder="EMP001" />
-        <button id="loginBtn" class="primary">Login</button>
-        <p id="loginMsg" class="msg"></p>
       </section>
 
       <section class="card hidden" id="dashboardCard">
