@@ -157,6 +157,20 @@ button:hover {
   overflow: auto;
 }
 
+.admin-panel-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.admin-panel-section {
+  display: grid;
+  gap: 8px;
+}
+
+.full-width {
+  grid-column: 1 / -1;
+}
+
 .summary-grid {
   display: grid;
   grid-template-columns: 2fr 0.7fr 0.7fr 0.9fr 0.9fr;
@@ -254,5 +268,32 @@ button:hover {
   .summary-grid {
     grid-template-columns: 1fr 0.6fr 0.6fr 0.7fr 0.8fr;
     gap: 8px;
+  }
+}
+
+@media (min-width: 900px) {
+  .admin-modal {
+    place-items: center;
+    padding: 22px;
+  }
+
+  .admin-modal-card {
+    width: min(96vw, 1120px);
+    max-height: 90vh;
+    padding: 20px 22px;
+    border-radius: 20px;
+  }
+
+  .admin-panel-grid {
+    grid-template-columns: minmax(320px, 420px) minmax(340px, 1fr);
+    align-items: start;
+  }
+
+  .admin-panel-section:nth-child(3) {
+    grid-column: 1 / -1;
+  }
+
+  .summary-grid {
+    grid-template-columns: minmax(220px, 2.2fr) repeat(4, minmax(90px, 0.7fr));
   }
 }

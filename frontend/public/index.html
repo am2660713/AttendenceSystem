@@ -72,25 +72,36 @@
             </div>
           </div>
           <p class="muted">Add employees and view all registered users.</p>
-          <label for="newEmployeeId">Employee ID</label>
-          <input id="newEmployeeId" placeholder="EMP004" />
-          <label for="newEmployeeName">Employee Name</label>
-          <input id="newEmployeeName" placeholder="Neha Patil" />
-          <label for="newEmployeeDepartment">Department</label>
-          <input id="newEmployeeDepartment" placeholder="Finance" />
-          <button id="addEmployeeBtn" class="primary" type="button">Add Employee</button>
-          <button id="importEmployeesBtn" class="secondary full" type="button">Import Employees Excel/CSV</button>
-          <input id="importEmployeesInput" type="file" accept=".csv,text/csv" class="hidden" />
-          <button id="exportAttendanceBtn" class="secondary full" type="button">Download Attendance Excel</button>
-          <p id="adminMsg" class="msg"></p>
-          <h3>HR Monthly Summary</h3>
-          <label for="summaryMonth">Month</label>
-          <input id="summaryMonth" type="month" />
-          <button id="loadSummaryBtn" class="secondary full" type="button">Load Summary</button>
-          <div id="summaryStats" class="status"></div>
-          <div id="summaryTable" class="history"></div>
-          <h3>Employee List</h3>
-          <div id="employeeList" class="history"></div>
+          <div class="admin-panel-grid">
+            <section class="admin-panel-section">
+              <h3>Employee Tools</h3>
+              <label for="newEmployeeId">Employee ID</label>
+              <input id="newEmployeeId" placeholder="EMP004" />
+              <label for="newEmployeeName">Employee Name</label>
+              <input id="newEmployeeName" placeholder="Neha Patil" />
+              <label for="newEmployeeDepartment">Department</label>
+              <input id="newEmployeeDepartment" placeholder="Finance" />
+              <button id="addEmployeeBtn" class="primary" type="button">Add Employee</button>
+              <button id="importEmployeesBtn" class="secondary full" type="button">Import Employees Excel/CSV</button>
+              <input id="importEmployeesInput" type="file" accept=".csv,text/csv" class="hidden" />
+              <button id="exportAttendanceBtn" class="secondary full" type="button">Download Attendance Excel</button>
+              <p id="adminMsg" class="msg"></p>
+            </section>
+
+            <section class="admin-panel-section">
+              <h3>HR Monthly Summary</h3>
+              <label for="summaryMonth">Month</label>
+              <input id="summaryMonth" type="month" />
+              <button id="loadSummaryBtn" class="secondary full" type="button">Load Summary</button>
+              <div id="summaryStats" class="status"></div>
+              <div id="summaryTable" class="history"></div>
+            </section>
+
+            <section class="admin-panel-section full-width">
+              <h3>Employee List</h3>
+              <div id="employeeList" class="history"></div>
+            </section>
+          </div>
         </div>
       </section>
     </main>
