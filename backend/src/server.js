@@ -86,6 +86,14 @@ const getMonthBounds = (month) => {
   return { start, end: nextMonthStart, month: safeMonth };
 };
 
+const getPagination = (url, defaultPageSize = 10) => {
+  const page = Math.max(1, Number.parseInt(url.searchParams.get("page") || "1", 10) || 1);
+  const pageSizeRaw = Number.parseInt(url.searchParams.get("pageSize") || String(defaultPageSize), 10) || defaultPageSize;
+  const pageSize = Math.min(50, Math.max(5, pageSizeRaw));
+  const offset = (page - 1) * pageSize;
+  return { page, pageSize, offset };
+};
+
 const haversineMeters = (lat1, lon1, lat2, lon2) => {
   const toRad = (v) => (v * Math.PI) / 180;
   const earthRadius = 6371000;
@@ -303,8 +311,16 @@ const server = http.createServer(async (req, res) => {
 
     if (req.method === "GET" && url.pathname === "/api/employees") {
       if (!requireAdminSession(req, res, corsOrigin)) return;
+      const { page, pageSize, offset } = getPagination(url, 10);
+      const countRes = await query("SELECT COUNT(*)::int AS count FROM employees WHERE active = true");
+      const total = countRes.rows[0].count;
       const dbRes = await query(
-        "SELECT id, name, department, device_token, device_label, device_bound_at FROM employees WHERE active = true ORDER BY id"
+        `SELECT id, name, department, device_token, device_label, device_bound_at
+         FROM employees
+         WHERE active = true
+         ORDER BY id
+         LIMIT $1 OFFSET $2`,
+        [pageSize, offset]
       );
       sendJson(
         res,
@@ -315,6 +331,10 @@ const server = http.createServer(async (req, res) => {
             deviceBound: Boolean(employee.device_token),
             deviceLabel: employee.device_label || "",
           })),
+          page,
+          pageSize,
+          total,
+          totalPages: Math.max(1, Math.ceil(total / pageSize)),
         },
         corsOrigin
       );
@@ -534,6 +554,7 @@ const server = http.createServer(async (req, res) => {
       const month = String(url.searchParams.get("month") || "").trim();
       const config = await readConfig();
       const { start, end, month: safeMonth } = getMonthBounds(month);
+      const { page, pageSize, offset } = getPagination(url, 10);
 
       const [employeesRes, attendanceRes] = await Promise.all([
         query("SELECT id, name, department FROM employees WHERE active = true ORDER BY id"),
@@ -572,14 +593,30 @@ const server = http.createServer(async (req, res) => {
         if (metrics.lateMark) employee.lateDays += 1;
       }
 
-      const records = Array.from(summary.values()).map((item) => ({
+      const allRecords = Array.from(summary.values()).map((item) => ({
         ...item,
         totalHours: Number(item.totalHours.toFixed(2)),
         overtimeHours: Number(item.overtimeHours.toFixed(2)),
         month: safeMonth,
       }));
 
-      sendJson(res, 200, { month: safeMonth, shift: config.shift || null, records }, corsOrigin);
+      const total = allRecords.length;
+      const records = allRecords.slice(offset, offset + pageSize);
+
+      sendJson(
+        res,
+        200,
+        {
+          month: safeMonth,
+          shift: config.shift || null,
+          records,
+          page,
+          pageSize,
+          total,
+          totalPages: Math.max(1, Math.ceil(total / pageSize)),
+        },
+        corsOrigin
+      );
       return;
     }
 

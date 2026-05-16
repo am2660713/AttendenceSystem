@@ -23,9 +23,17 @@ const exportAttendanceBtn = document.getElementById("exportAttendanceBtn");
 const adminMsg = document.getElementById("adminMsg");
 const employeeList = document.getElementById("employeeList");
 const summaryMonth = document.getElementById("summaryMonth");
+const summaryPageSize = document.getElementById("summaryPageSize");
 const loadSummaryBtn = document.getElementById("loadSummaryBtn");
+const summaryPrevBtn = document.getElementById("summaryPrevBtn");
+const summaryNextBtn = document.getElementById("summaryNextBtn");
+const summaryPageInfo = document.getElementById("summaryPageInfo");
 const summaryStats = document.getElementById("summaryStats");
 const summaryTable = document.getElementById("summaryTable");
+const employeePageSize = document.getElementById("employeePageSize");
+const employeePrevBtn = document.getElementById("employeePrevBtn");
+const employeeNextBtn = document.getElementById("employeeNextBtn");
+const employeePageInfo = document.getElementById("employeePageInfo");
 const adminPasswordInput = document.getElementById("adminPassword");
 const unlockAdminBtn = document.getElementById("unlockAdminBtn");
 const unlockMsg = document.getElementById("unlockMsg");
@@ -43,6 +51,10 @@ localStorage.removeItem("adminUnlocked");
 let adminUnlocked = false;
 let adminToken = null;
 let activeAdminView = "tools";
+let summaryPage = 1;
+let summaryTotalPages = 1;
+let employeePage = 1;
+let employeeTotalPages = 1;
 const deviceTokenKey = "attendanceDeviceToken";
 const getDeviceToken = () => {
   const existing = localStorage.getItem(deviceTokenKey);
@@ -145,8 +157,10 @@ const setAdminView = (view) => {
   });
 
   if (view === "summary") {
+    summaryPage = 1;
     renderSummary();
   } else if (view === "list") {
+    employeePage = 1;
     renderEmployees();
   }
 };
@@ -156,9 +170,14 @@ const applyAdminVisibility = () => {
 };
 
 const renderEmployees = async () => {
-  const data = await callApi("/employees", "GET", undefined, { "x-admin-token": adminToken || "" });
+  const pageSize = Number(employeePageSize?.value || 10);
+  const data = await callApi(`/employees?page=${employeePage}&pageSize=${pageSize}`, "GET", undefined, {
+    "x-admin-token": adminToken || "",
+  });
+  employeeTotalPages = Number(data.totalPages || 1);
   if (!data.employees.length) {
     employeeList.innerHTML = "<p class='muted'>No employees found.</p>";
+    if (employeePageInfo) employeePageInfo.textContent = `Page ${employeePage} of ${employeeTotalPages}`;
     return;
   }
 
@@ -183,6 +202,9 @@ const renderEmployees = async () => {
         </div>`
     )
     .join("");
+  if (employeePageInfo) employeePageInfo.textContent = `Page ${data.page || employeePage} of ${employeeTotalPages}`;
+  if (employeePrevBtn) employeePrevBtn.disabled = (data.page || employeePage) <= 1;
+  if (employeeNextBtn) employeeNextBtn.disabled = (data.page || employeePage) >= employeeTotalPages;
 };
 
 const renderSummary = async () => {
@@ -195,9 +217,16 @@ const renderSummary = async () => {
 
   try {
     const month = summaryMonth.value || getISTMonthValue();
-    const data = await callApi(`/admin/monthly-summary?month=${encodeURIComponent(month)}`, "GET", undefined, {
+    const pageSize = Number(summaryPageSize?.value || 10);
+    const data = await callApi(
+      `/admin/monthly-summary?month=${encodeURIComponent(month)}&page=${summaryPage}&pageSize=${pageSize}`,
+      "GET",
+      undefined,
+      {
       "x-admin-token": adminToken || "",
-    });
+      }
+    );
+    summaryTotalPages = Number(data.totalPages || 1);
 
     const records = Array.isArray(data.records) ? data.records : [];
     const lateDays = records.reduce((total, item) => total + Number(item.lateDays || 0), 0);
@@ -219,6 +248,7 @@ const renderSummary = async () => {
 
     if (!records.length) {
       summaryTable.innerHTML = "<p class='muted'>No monthly attendance found for this period.</p>";
+      if (summaryPageInfo) summaryPageInfo.textContent = `Page ${summaryPage} of ${summaryTotalPages}`;
       return;
     }
 
@@ -247,6 +277,9 @@ const renderSummary = async () => {
         )
         .join("")}
     `;
+    if (summaryPageInfo) summaryPageInfo.textContent = `Page ${data.page || summaryPage} of ${summaryTotalPages}`;
+    if (summaryPrevBtn) summaryPrevBtn.disabled = (data.page || summaryPage) <= 1;
+    if (summaryNextBtn) summaryNextBtn.disabled = (data.page || summaryPage) >= summaryTotalPages;
   } catch (error) {
     summaryStats.textContent = "";
     summaryTable.innerHTML = `<p class='msg'>${error.message}</p>`;
@@ -482,6 +515,8 @@ unlockAdminBtn.addEventListener("click", async () => {
     adminPanelModal.classList.remove("hidden");
     setMessage(adminMsg, data.message, true);
     setAdminView("tools");
+    summaryPage = 1;
+    employeePage = 1;
     await renderEmployees();
     await renderSummary();
   } catch (error) {
@@ -490,7 +525,46 @@ unlockAdminBtn.addEventListener("click", async () => {
 });
 
 loadSummaryBtn.addEventListener("click", async () => {
+  summaryPage = 1;
   await renderSummary();
+});
+
+summaryPageSize?.addEventListener("change", async () => {
+  summaryPage = 1;
+  await renderSummary();
+});
+
+employeePageSize?.addEventListener("change", async () => {
+  employeePage = 1;
+  await renderEmployees();
+});
+
+summaryPrevBtn?.addEventListener("click", async () => {
+  if (summaryPage > 1) {
+    summaryPage -= 1;
+    await renderSummary();
+  }
+});
+
+summaryNextBtn?.addEventListener("click", async () => {
+  if (summaryPage < summaryTotalPages) {
+    summaryPage += 1;
+    await renderSummary();
+  }
+});
+
+employeePrevBtn?.addEventListener("click", async () => {
+  if (employeePage > 1) {
+    employeePage -= 1;
+    await renderEmployees();
+  }
+});
+
+employeeNextBtn?.addEventListener("click", async () => {
+  if (employeePage < employeeTotalPages) {
+    employeePage += 1;
+    await renderEmployees();
+  }
 });
 
 adminViewButtons.forEach((button) => {
