@@ -680,27 +680,39 @@ select:focus {
     min-width: 0;
   }
 
-  .admin-modal-card.summary-mode {
-    width: min(98vw, 1560px);
-    height: 95vh;
-    max-height: 95vh;
+  #adminPanelModal {
+    place-items: stretch;
+    padding: 0;
   }
 
-  .admin-modal-card.summary-mode .admin-panel-grid {
+  #adminPanelModal .admin-modal-card {
+    width: 100vw;
+    height: 100vh;
+    max-height: none;
+    border-radius: 0;
+    padding: 24px 28px;
+  }
+
+  #adminPanelModal .admin-panel-grid {
     grid-template-columns: 1fr;
+    align-items: stretch;
   }
 
-  .admin-modal-card.summary-mode .admin-view-pane[data-admin-view="summary"] {
+  #adminPanelModal .admin-view-pane {
     display: flex;
     flex-direction: column;
     min-height: 0;
   }
 
-  .admin-modal-card.summary-mode #summaryStats {
+  #adminPanelModal .admin-view-pane[data-admin-view="summary"] {
+    grid-column: 1 / -1;
+  }
+
+  #adminPanelModal #summaryStats {
     flex: 0 0 auto;
   }
 
-  .admin-modal-card.summary-mode #summaryTable.history {
+  #adminPanelModal #summaryTable.history {
     flex: 1;
     min-height: 0;
   }
