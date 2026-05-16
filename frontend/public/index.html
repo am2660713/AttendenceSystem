@@ -118,7 +118,13 @@
               <label for="newEmployeeName">Employee Name</label>
               <input id="newEmployeeName" placeholder="Neha Patil" />
               <label for="newEmployeeDepartment">Department</label>
-              <input id="newEmployeeDepartment" placeholder="Finance" />
+              <select id="newEmployeeDepartment">
+                <option value="">Select department</option>
+                <option value="Software">Software</option>
+                <option value="Hardware">Hardware</option>
+                <option value="Graphics">Graphics</option>
+                <option value="Management">Management</option>
+              </select>
               <button id="addEmployeeBtn" class="primary" type="button">Add Employee</button>
               <button id="importEmployeesBtn" class="secondary full" type="button">Import Employees Excel/CSV</button>
               <input id="importEmployeesInput" type="file" accept=".csv,text/csv" class="hidden" />

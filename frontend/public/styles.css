@@ -396,6 +396,10 @@ button:hover {
   flex-wrap: wrap;
   gap: 8px;
   margin: 10px 0 14px;
+  padding: 8px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(15, 76, 92, 0.06), rgba(31, 122, 79, 0.04));
+  border: 1px solid rgba(20, 107, 128, 0.08);
 }
 
 .admin-view-btn {
@@ -418,6 +422,11 @@ button:hover {
 .admin-panel-section {
   display: grid;
   gap: 8px;
+  padding: 18px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(244, 249, 246, 0.98));
+  border: 1px solid rgba(20, 107, 128, 0.10);
+  box-shadow: 0 12px 28px rgba(15, 41, 44, 0.06);
 }
 
 .admin-subsection {
@@ -434,6 +443,16 @@ button:hover {
 
 .admin-view-pane {
   padding: 4px 0 0;
+}
+
+.admin-view-pane h3 {
+  margin-bottom: 6px;
+  color: var(--primary);
+}
+
+.admin-view-pane input,
+.admin-view-pane select {
+  background: rgba(255, 255, 255, 0.94);
 }
 
 .admin-panel-section[data-admin-view="summary"] {
@@ -597,7 +616,9 @@ select:focus {
 
 .admin-modal-card {
   width: min(92vw, 380px);
-  background: #fff;
+  background:
+    radial-gradient(circle at top right, rgba(20, 107, 128, 0.12), transparent 24%),
+    linear-gradient(180deg, #ffffff, #f6faf8);
   border-radius: 16px;
   padding: 16px;
   border: 1px solid var(--line);
@@ -703,6 +724,7 @@ select:focus {
     display: flex;
     flex-direction: column;
     min-height: 0;
+    gap: 12px;
   }
 
   #adminPanelModal .admin-view-pane[data-admin-view="summary"] {
