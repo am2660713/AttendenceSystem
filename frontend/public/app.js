@@ -17,6 +17,7 @@ const newEmployeeId = document.getElementById("newEmployeeId");
 const newEmployeeName = document.getElementById("newEmployeeName");
 const newEmployeeDepartment = document.getElementById("newEmployeeDepartment");
 const addEmployeeBtn = document.getElementById("addEmployeeBtn");
+const exportAttendanceBtn = document.getElementById("exportAttendanceBtn");
 const adminMsg = document.getElementById("adminMsg");
 const employeeList = document.getElementById("employeeList");
 const adminPasswordInput = document.getElementById("adminPassword");
@@ -32,16 +33,17 @@ const closeAdminPanelBtn = document.getElementById("closeAdminPanelBtn");
 let currentEmployee = null;
 localStorage.removeItem("adminUnlocked");
 let adminUnlocked = false;
+let adminToken = null;
 
 const setMessage = (el, text, ok = false) => {
   el.textContent = text;
   el.style.color = ok ? "#0f766e" : "#b91c1c";
 };
 
-const callApi = async (path, method = "GET", body) => {
+const callApi = async (path, method = "GET", body, extraHeaders = {}) => {
   const res = await fetch(`${API_BASE}${path}`, {
     method,
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...extraHeaders },
     body: body ? JSON.stringify(body) : undefined,
   });
   const data = await res.json();
@@ -95,6 +97,7 @@ const refresh = async () => {
 const closeAdminPanels = (lock = true) => {
   if (lock) {
     adminUnlocked = false;
+    adminToken = null;
   }
   adminModal.classList.add("hidden");
   adminPanelModal.classList.add("hidden");
@@ -110,7 +113,7 @@ const applyAdminVisibility = () => {
 };
 
 const renderEmployees = async () => {
-  const data = await callApi("/employees");
+  const data = await callApi("/employees", "GET", undefined, { "x-admin-token": adminToken || "" });
   if (!data.employees.length) {
     employeeList.innerHTML = "<p class='muted'>No employees found.</p>";
     return;
@@ -183,7 +186,7 @@ addEmployeeBtn.addEventListener("click", async () => {
 
     if (!id || !name || !department) throw new Error("Please fill all employee fields.");
 
-    const data = await callApi("/employees", "POST", { id, name, department });
+    const data = await callApi("/employees", "POST", { id, name, department }, { "x-admin-token": adminToken || "" });
     setMessage(adminMsg, data.message, true);
     newEmployeeId.value = "";
     newEmployeeName.value = "";
@@ -200,6 +203,7 @@ unlockAdminBtn.addEventListener("click", async () => {
     if (!password) throw new Error("Enter admin password.");
     const data = await callApi("/admin/unlock", "POST", { password });
     adminUnlocked = true;
+    adminToken = data.token;
     adminModal.classList.add("hidden");
     adminPasswordInput.value = "";
     unlockMsg.textContent = "";
@@ -211,12 +215,41 @@ unlockAdminBtn.addEventListener("click", async () => {
   }
 });
 
+exportAttendanceBtn.addEventListener("click", async () => {
+  try {
+    if (!adminToken) throw new Error("Unlock admin first.");
+    const res = await fetch(`${API_BASE}/admin/export-attendance`, {
+      method: "GET",
+      headers: { "x-admin-token": adminToken },
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(data.message || "Export failed");
+    }
+
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "attendance-export.csv";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+    setMessage(adminMsg, "Attendance exported successfully.", true);
+  } catch (error) {
+    setMessage(adminMsg, error.message);
+  }
+});
+
 lockAdminBtn.addEventListener("click", () => {
   closeAdminPanels(true);
 });
 
 adminTabBtn.addEventListener("click", () => {
   adminUnlocked = false;
+  adminToken = null;
   adminPanelModal.classList.add("hidden");
   adminModal.classList.remove("hidden");
   adminPasswordInput.focus();

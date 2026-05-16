@@ -1,5 +1,6 @@
 import http from "node:http";
 import fs from "node:fs/promises";
+import crypto from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { initDb, query } from "./db.js";
@@ -8,6 +9,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const configPath = path.join(__dirname, "..", "data", "config.json");
 const adminPassword = process.env.ADMIN_PASSWORD || "admin123";
+const adminSessions = new Map();
 
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || "*")
   .split(",")
@@ -30,6 +32,17 @@ const sendJson = (res, statusCode, payload, origin = "*") => {
 
   res.writeHead(statusCode, { "Content-Type": "application/json", ...corsHeaders });
   res.end(JSON.stringify(payload));
+};
+
+const sendCsv = (res, csv, origin = "*", filename = "attendance-export.csv") => {
+  res.writeHead(200, {
+    "Content-Type": "text/csv; charset=utf-8",
+    "Content-Disposition": `attachment; filename="${filename}"`,
+    "Access-Control-Allow-Origin": origin,
+    "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, x-admin-token",
+  });
+  res.end(`\uFEFF${csv}`);
 };
 
 const normalizeText = (value) => String(value || "").trim().toLowerCase().replace(/\s+/g, "");
@@ -80,6 +93,27 @@ const parseBody = (req) =>
       }
     });
   });
+
+const csvCell = (value) => {
+  const text = String(value ?? "");
+  if (/[",\n]/.test(text)) {
+    return `"${text.replace(/"/g, '""')}"`;
+  }
+  return text;
+};
+
+const getAdminToken = (req) => String(req.headers["x-admin-token"] || "").trim();
+
+const requireAdminSession = (req, res, origin) => {
+  const token = getAdminToken(req);
+  const expiresAt = adminSessions.get(token);
+  if (!token || !expiresAt || expiresAt <= Date.now()) {
+    if (token) adminSessions.delete(token);
+    sendJson(res, 401, { message: "Admin authorization required." }, origin);
+    return null;
+  }
+  return token;
+};
 
 const mapAttendance = (row) => ({
   date: row.attendance_date,
@@ -171,17 +205,21 @@ const server = http.createServer(async (req, res) => {
         sendJson(res, 401, { message: "Invalid admin password." }, corsOrigin);
         return;
       }
-      sendJson(res, 200, { message: "Admin unlocked." }, corsOrigin);
+      const token = crypto.randomUUID();
+      adminSessions.set(token, Date.now() + 8 * 60 * 60 * 1000);
+      sendJson(res, 200, { message: "Admin unlocked.", token }, corsOrigin);
       return;
     }
 
     if (req.method === "GET" && url.pathname === "/api/employees") {
+      if (!requireAdminSession(req, res, corsOrigin)) return;
       const dbRes = await query("SELECT id, name, department FROM employees ORDER BY id");
       sendJson(res, 200, { employees: dbRes.rows }, corsOrigin);
       return;
     }
 
     if (req.method === "POST" && url.pathname === "/api/employees") {
+      if (!requireAdminSession(req, res, corsOrigin)) return;
       const body = await parseBody(req);
       const id = String(body.id || "").trim().toUpperCase();
       const name = String(body.name || "").trim();
@@ -206,6 +244,52 @@ const server = http.createServer(async (req, res) => {
       );
 
       sendJson(res, 201, { message: "Employee added successfully.", employee: insertRes.rows[0] }, corsOrigin);
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/admin/export-attendance") {
+      if (!requireAdminSession(req, res, corsOrigin)) return;
+
+      const dbRes = await query(
+        `SELECT
+           a.employee_id,
+           e.name,
+           e.department,
+           a.attendance_date,
+           a.check_in_at,
+           a.check_out_at,
+           a.total_hours,
+           a.status
+         FROM attendance a
+         LEFT JOIN employees e ON e.id = a.employee_id
+         ORDER BY a.attendance_date DESC, a.employee_id ASC`
+      );
+
+      const header = [
+        "employee_id",
+        "employee_name",
+        "department",
+        "date",
+        "check_in",
+        "check_out",
+        "total_hours",
+        "status",
+      ];
+      const rows = dbRes.rows.map((row) => [
+        row.employee_id,
+        row.name || "",
+        row.department || "",
+        row.attendance_date,
+        row.check_in_at ? toISTDateTime(row.check_in_at) : "",
+        row.check_out_at ? toISTDateTime(row.check_out_at) : "",
+        Number(row.total_hours),
+        row.status,
+      ]);
+      const csv = [header, ...rows]
+        .map((row) => row.map(csvCell).join(","))
+        .join("\n");
+
+      sendCsv(res, csv, corsOrigin, `attendance-export-${getISTDate()}.csv`);
       return;
     }
 
