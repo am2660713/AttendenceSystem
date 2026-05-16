@@ -23,11 +23,13 @@ const getCorsOrigin = (origin) => {
   return null;
 };
 
+const corsAllowHeaders = "Content-Type, x-admin-token";
+
 const sendJson = (res, statusCode, payload, origin = "*") => {
   const corsHeaders = {
     "Access-Control-Allow-Origin": origin,
     "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Headers": corsAllowHeaders,
   };
 
   res.writeHead(statusCode, { "Content-Type": "application/json", ...corsHeaders });
@@ -40,7 +42,8 @@ const sendCsv = (res, csv, origin = "*", filename = "attendance-export.csv") => 
     "Content-Disposition": `attachment; filename="${filename}"`,
     "Access-Control-Allow-Origin": origin,
     "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, x-admin-token",
+    "Access-Control-Allow-Headers": corsAllowHeaders,
+    "Access-Control-Expose-Headers": "Content-Disposition",
   });
   res.end(`\uFEFF${csv}`);
 };
@@ -159,7 +162,7 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(204, {
         "Access-Control-Allow-Origin": corsOrigin,
         "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type",
+        "Access-Control-Allow-Headers": corsAllowHeaders,
       });
       res.end();
       return;
