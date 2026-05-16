@@ -459,6 +459,7 @@ button:hover {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  gap: 12px;
 }
 
 .pager {
@@ -533,9 +534,19 @@ select:focus {
 }
 
 #summaryTable.history {
+  flex: 1 1 auto;
+  min-height: 0;
   max-height: none;
-  overflow: visible;
+  overflow: auto;
   border-top: 0;
+  padding-bottom: 8px;
+}
+
+.admin-panel-section[data-admin-view="summary"] > .pager {
+  margin-top: 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  flex: 0 0 auto;
 }
 
 .record {
@@ -738,6 +749,7 @@ select:focus {
   #adminPanelModal #summaryTable.history {
     flex: 1;
     min-height: 0;
+    overflow: auto;
   }
 }
 
