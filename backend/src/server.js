@@ -259,6 +259,6 @@ initDb()
     });
   })
   .catch((error) => {
-    console.error("Failed to initialize database:", error.message);
+    console.error("Failed to initialize database:", error);
     process.exit(1);
   });
