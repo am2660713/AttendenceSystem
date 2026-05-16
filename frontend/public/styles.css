@@ -154,6 +154,22 @@ button:hover {
   font-size: 13px;
 }
 
+.employee-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.mini-danger {
+  width: auto;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: linear-gradient(120deg, #9f2a24, #c94a3d);
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
 .admin-tab {
   position: fixed;
   right: 14px;

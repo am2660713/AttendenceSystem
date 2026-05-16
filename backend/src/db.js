@@ -29,8 +29,14 @@ export const initDb = async () => {
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       department TEXT NOT NULL,
+      active BOOLEAN NOT NULL DEFAULT TRUE,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
+  `);
+
+  await query(`
+    ALTER TABLE employees
+    ADD COLUMN IF NOT EXISTS active BOOLEAN NOT NULL DEFAULT TRUE;
   `);
 
   await query(`

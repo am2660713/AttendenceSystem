@@ -122,7 +122,17 @@ const renderEmployees = async () => {
   }
 
   employeeList.innerHTML = data.employees
-    .map((emp) => `<div class="record"><strong>${emp.id}</strong><br/>${emp.name}<br/>${emp.department}</div>`)
+    .map(
+      (emp) =>
+        `<div class="record employee-row" data-employee-id="${emp.id}">
+          <div>
+            <strong>${emp.id}</strong><br/>
+            ${emp.name}<br/>
+            ${emp.department}
+          </div>
+          <button class="mini-danger remove-employee-btn" data-employee-id="${emp.id}" type="button">Remove</button>
+        </div>`
+    )
     .join("");
 };
 
@@ -256,6 +266,31 @@ addEmployeeBtn.addEventListener("click", async () => {
     newEmployeeId.value = "";
     newEmployeeName.value = "";
     newEmployeeDepartment.value = "";
+    await renderEmployees();
+  } catch (error) {
+    setMessage(adminMsg, error.message);
+  }
+});
+
+employeeList.addEventListener("click", async (event) => {
+  const button = event.target.closest(".remove-employee-btn");
+  if (!button) return;
+
+  const employeeId = button.dataset.employeeId;
+  if (!employeeId) return;
+
+  if (!window.confirm(`Remove ${employeeId}? This will deactivate the employee, but keep past attendance records.`)) {
+    return;
+  }
+
+  try {
+    const data = await callApi(
+      "/admin/remove-employee",
+      "POST",
+      { id: employeeId },
+      { "x-admin-token": adminToken || "" }
+    );
+    setMessage(adminMsg, data.message, true);
     await renderEmployees();
   } catch (error) {
     setMessage(adminMsg, error.message);

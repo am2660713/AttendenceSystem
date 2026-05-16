@@ -185,7 +185,7 @@ const server = http.createServer(async (req, res) => {
       const rawInput = String(body.employeeId || "").trim();
       if (!rawInput) return sendJson(res, 400, { message: "Employee ID is required." }, corsOrigin);
 
-      const dbRes = await query("SELECT id, name, department FROM employees");
+      const dbRes = await query("SELECT id, name, department FROM employees WHERE active = true");
       const employee = dbRes.rows.find((item) => {
         const idMatch = normalizeText(item.id) === normalizeText(rawInput);
         const nameMatch = normalizeText(item.name) === normalizeText(rawInput);
@@ -216,7 +216,7 @@ const server = http.createServer(async (req, res) => {
 
     if (req.method === "GET" && url.pathname === "/api/employees") {
       if (!requireAdminSession(req, res, corsOrigin)) return;
-      const dbRes = await query("SELECT id, name, department FROM employees ORDER BY id");
+      const dbRes = await query("SELECT id, name, department FROM employees WHERE active = true ORDER BY id");
       sendJson(res, 200, { employees: dbRes.rows }, corsOrigin);
       return;
     }
@@ -233,20 +233,45 @@ const server = http.createServer(async (req, res) => {
         return;
       }
 
-      const exists = await query("SELECT id FROM employees WHERE id = $1", [id]);
-      if (exists.rows[0]) {
-        sendJson(res, 409, { message: "Employee ID already exists." }, corsOrigin);
-        return;
-      }
+      const exists = await query("SELECT id, active FROM employees WHERE id = $1", [id]);
 
       const insertRes = await query(
-        `INSERT INTO employees (id, name, department)
-         VALUES ($1, $2, $3)
+        `INSERT INTO employees (id, name, department, active)
+         VALUES ($1, $2, $3, true)
+         ON CONFLICT (id) DO UPDATE
+         SET name = EXCLUDED.name,
+             department = EXCLUDED.department,
+             active = true
          RETURNING id, name, department`,
         [id, name, department]
       );
 
-      sendJson(res, 201, { message: "Employee added successfully.", employee: insertRes.rows[0] }, corsOrigin);
+      sendJson(
+        res,
+        exists.rows[0] ? 200 : 201,
+        { message: exists.rows[0] ? "Employee restored successfully." : "Employee added successfully.", employee: insertRes.rows[0] },
+        corsOrigin
+      );
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/admin/remove-employee") {
+      if (!requireAdminSession(req, res, corsOrigin)) return;
+      const body = await parseBody(req);
+      const id = String(body.id || "").trim().toUpperCase();
+      if (!id) {
+        sendJson(res, 400, { message: "Employee ID is required." }, corsOrigin);
+        return;
+      }
+
+      const exists = await query("SELECT id FROM employees WHERE id = $1 AND active = true", [id]);
+      if (!exists.rows[0]) {
+        sendJson(res, 404, { message: "Employee not found or already removed." }, corsOrigin);
+        return;
+      }
+
+      await query("UPDATE employees SET active = false WHERE id = $1", [id]);
+      sendJson(res, 200, { message: "Employee removed successfully." }, corsOrigin);
       return;
     }
 
