@@ -35,11 +35,14 @@ const adminModal = document.getElementById("adminModal");
 const closeAdminModalBtn = document.getElementById("closeAdminModalBtn");
 const adminPanelModal = document.getElementById("adminPanelModal");
 const closeAdminPanelBtn = document.getElementById("closeAdminPanelBtn");
+const adminViewButtons = document.querySelectorAll("[data-admin-view-btn]");
+const adminViewPanes = document.querySelectorAll("[data-admin-view]");
 
 let currentEmployee = null;
 localStorage.removeItem("adminUnlocked");
 let adminUnlocked = false;
 let adminToken = null;
+let activeAdminView = "tools";
 const deviceTokenKey = "attendanceDeviceToken";
 const getDeviceToken = () => {
   const existing = localStorage.getItem(deviceTokenKey);
@@ -129,6 +132,22 @@ const closeAdminPanels = (lock = true) => {
   unlockMsg.textContent = "";
   if (lock) {
     adminMsg.textContent = "";
+  }
+};
+
+const setAdminView = (view) => {
+  activeAdminView = view;
+  adminViewButtons.forEach((button) => {
+    button.classList.toggle("active", button.dataset.adminViewBtn === view);
+  });
+  adminViewPanes.forEach((pane) => {
+    pane.classList.toggle("hidden", pane.dataset.adminView !== view);
+  });
+
+  if (view === "summary") {
+    renderSummary();
+  } else if (view === "list") {
+    renderEmployees();
   }
 };
 
@@ -462,6 +481,7 @@ unlockAdminBtn.addEventListener("click", async () => {
     unlockMsg.textContent = "";
     adminPanelModal.classList.remove("hidden");
     setMessage(adminMsg, data.message, true);
+    setAdminView("tools");
     await renderEmployees();
     await renderSummary();
   } catch (error) {
@@ -471,6 +491,16 @@ unlockAdminBtn.addEventListener("click", async () => {
 
 loadSummaryBtn.addEventListener("click", async () => {
   await renderSummary();
+});
+
+adminViewButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    if (!adminUnlocked || !adminToken) {
+      setMessage(adminMsg, "Unlock admin first.");
+      return;
+    }
+    setAdminView(button.dataset.adminViewBtn || "tools");
+  });
 });
 
 exportAttendanceBtn.addEventListener("click", async () => {
@@ -511,6 +541,7 @@ adminTabBtn.addEventListener("click", () => {
   adminPanelModal.classList.add("hidden");
   adminModal.classList.remove("hidden");
   adminPasswordInput.focus();
+  setAdminView("tools");
 });
 
 closeAdminModalBtn.addEventListener("click", () => {

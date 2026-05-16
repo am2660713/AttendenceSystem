@@ -105,8 +105,13 @@
             </div>
           </div>
           <p class="muted">Add employees and view all registered users.</p>
+          <div class="admin-tabs" role="tablist" aria-label="Admin panel sections">
+            <button class="admin-view-btn active" type="button" data-admin-view-btn="tools">Employee Tools</button>
+            <button class="admin-view-btn" type="button" data-admin-view-btn="summary">HR Summary</button>
+            <button class="admin-view-btn" type="button" data-admin-view-btn="list">Employee List</button>
+          </div>
           <div class="admin-panel-grid">
-            <section class="admin-panel-section">
+            <section class="admin-panel-section admin-view-pane" data-admin-view="tools">
               <h3>Employee Tools</h3>
               <label for="newEmployeeId">Employee ID</label>
               <input id="newEmployeeId" placeholder="EMP004" />
@@ -121,7 +126,7 @@
               <p id="adminMsg" class="msg"></p>
             </section>
 
-            <section class="admin-panel-section">
+            <section class="admin-panel-section admin-view-pane hidden" data-admin-view="summary">
               <h3>HR Monthly Summary</h3>
               <label for="summaryMonth">Month</label>
               <input id="summaryMonth" type="month" />
@@ -130,7 +135,7 @@
               <div id="summaryTable" class="history"></div>
             </section>
 
-            <section class="admin-panel-section full-width">
+            <section class="admin-panel-section admin-view-pane hidden full-width" data-admin-view="list">
               <h3>Employee List</h3>
               <div id="employeeList" class="history"></div>
             </section>

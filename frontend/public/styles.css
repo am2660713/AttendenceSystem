@@ -391,6 +391,30 @@ button:hover {
   gap: 16px;
 }
 
+.admin-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0 14px;
+}
+
+.admin-view-btn {
+  width: auto;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: #e7efe9;
+  color: #27404a;
+  border: 1px solid rgba(20, 107, 128, 0.12);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.admin-view-btn.active {
+  background: linear-gradient(120deg, #0f4c5c, #146b80);
+  color: #fff;
+  box-shadow: 0 10px 20px rgba(15, 76, 92, 0.18);
+}
+
 .admin-panel-section {
   display: grid;
   gap: 8px;
@@ -398,6 +422,10 @@ button:hover {
 
 .full-width {
   grid-column: 1 / -1;
+}
+
+.admin-view-pane {
+  padding: 4px 0 0;
 }
 
 .summary-grid {
