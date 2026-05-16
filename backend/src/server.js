@@ -296,7 +296,15 @@ const server = http.createServer(async (req, res) => {
       }
 
       if (!existing?.check_in_at) return sendJson(res, 409, { message: "No check-in found for today." }, corsOrigin);
-      if (existing.check_out_at) return sendJson(res, 409, { message: "Check-out already marked." }, corsOrigin);
+
+      if (existing.check_out_at && now <= Number(existing.check_out_at)) {
+        return sendJson(
+          res,
+          409,
+          { message: "A later check-out is required to update the logout time." },
+          corsOrigin
+        );
+      }
 
       const totalHours = Number(((now - Number(existing.check_in_at)) / (1000 * 60 * 60)).toFixed(2));
       const updateRes = await query(
@@ -312,7 +320,17 @@ const server = http.createServer(async (req, res) => {
         [now, latitude, longitude, totalHours, existing.id]
       );
 
-      sendJson(res, 200, { message: "Check-out marked successfully.", record: mapAttendance(updateRes.rows[0]) }, corsOrigin);
+      sendJson(
+        res,
+        200,
+        {
+          message: existing.check_out_at
+            ? "Check-out updated successfully."
+            : "Check-out marked successfully.",
+          record: mapAttendance(updateRes.rows[0]),
+        },
+        corsOrigin
+      );
       return;
     }
 
