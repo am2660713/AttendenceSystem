@@ -148,15 +148,15 @@ body {
 .login-card {
   position: relative;
   overflow: hidden;
-  color: #edf9fc;
+  color: #20313a;
   background:
-    radial-gradient(circle at 12% 12%, rgba(157, 246, 255, 0.20), transparent 24%),
-    radial-gradient(circle at 88% 18%, rgba(196, 255, 215, 0.16), transparent 22%),
-    linear-gradient(145deg, #0d3f4e, #0f5b70 55%, #123b57);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+    linear-gradient(135deg, rgba(239, 248, 245, 0.92), rgba(247, 244, 236, 0.92)),
+    radial-gradient(circle at 8% 12%, rgba(15, 76, 92, 0.08), transparent 26%),
+    radial-gradient(circle at 92% 14%, rgba(31, 122, 79, 0.10), transparent 24%);
+  border: 1px solid rgba(20, 107, 128, 0.12);
   box-shadow:
-    0 24px 48px rgba(11, 43, 54, 0.22),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    0 24px 48px rgba(11, 43, 54, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.72);
 }
 
 .login-card::before {
@@ -165,37 +165,77 @@ body {
   inset: 0 auto auto 0;
   width: 100%;
   height: 4px;
-  background: linear-gradient(90deg, #9bf6ff, #12a4b2, #b8ffd3);
+  background: linear-gradient(90deg, #0f4c5c, #12a4b2, #1f7a4f);
+}
+
+.login-card::after {
+  content: "";
+  position: absolute;
+  inset: 18px auto 18px 18px;
+  width: 170px;
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.48), transparent 14%),
+    radial-gradient(circle at 78% 72%, rgba(255, 255, 255, 0.24), transparent 16%),
+    linear-gradient(160deg, rgba(15, 76, 92, 0.92), rgba(20, 107, 128, 0.78));
+  opacity: 0.96;
+  pointer-events: none;
+  box-shadow: 0 18px 34px rgba(15, 76, 92, 0.16);
 }
 
 .login-card h2,
 .login-card label,
 .login-card strong {
-  color: #f3fcff;
+  color: #24343b;
 }
 
 .login-card .muted {
-  color: rgba(235, 249, 252, 0.82);
+  color: rgba(35, 53, 61, 0.70);
+}
+
+.login-card h2 {
+  position: relative;
+  z-index: 1;
+  font-size: 28px;
+  margin-left: 198px;
+}
+
+.login-card .muted,
+.login-card label,
+.login-card input,
+.login-card button,
+.login-card .msg {
+  position: relative;
+  z-index: 1;
+}
+
+.login-card > .muted,
+.login-card > label,
+.login-card > input,
+.login-card > button,
+.login-card > .msg {
+  margin-left: 198px;
 }
 
 .login-card input {
-  background: rgba(255, 255, 255, 0.10);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  color: #f8feff;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(20, 107, 128, 0.14);
+  color: #17313a;
   backdrop-filter: blur(10px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
 .login-card input::placeholder {
-  color: rgba(248, 254, 255, 0.64);
+  color: rgba(61, 83, 91, 0.58);
 }
 
 .login-card input:focus {
-  border-color: rgba(155, 246, 255, 0.85);
-  box-shadow: 0 0 0 3px rgba(155, 246, 255, 0.16);
+  border-color: rgba(20, 107, 128, 0.52);
+  box-shadow: 0 0 0 3px rgba(20, 107, 128, 0.12);
 }
 
 .login-card .primary {
-  box-shadow: 0 12px 24px rgba(7, 35, 42, 0.25);
+  box-shadow: 0 12px 24px rgba(7, 35, 42, 0.14);
 }
 
 .login-ribbon {
@@ -206,8 +246,8 @@ body {
   margin-bottom: 12px;
   padding: 12px 14px;
   border-radius: 16px;
-  background: linear-gradient(120deg, rgba(15, 76, 92, 0.08), rgba(31, 122, 79, 0.08));
-  border: 1px solid rgba(20, 107, 128, 0.12);
+  background: linear-gradient(120deg, rgba(15, 76, 92, 0.08), rgba(31, 122, 79, 0.06));
+  border: 1px solid rgba(20, 107, 128, 0.10);
 }
 
 .login-ribbon span {
@@ -220,7 +260,40 @@ body {
 
 .login-ribbon strong {
   font-size: 13px;
-  color: #284250;
+  color: #1f3944;
+}
+
+.login-card .msg {
+  color: #9f2a24;
+}
+
+.login-card .primary {
+  background: linear-gradient(120deg, #0f4c5c, #146b80);
+}
+
+.login-card .primary:hover {
+  filter: saturate(1.08);
+}
+
+@media (max-width: 900px) {
+  .login-card::after {
+    inset: 18px 18px auto 18px;
+    height: 110px;
+    width: auto;
+  }
+
+  .login-card h2,
+  .login-card .muted,
+  .login-card label,
+  .login-card input,
+  .login-card button,
+  .login-card .msg {
+    margin-left: 0;
+  }
+
+  .login-card h2 {
+    margin-top: 124px;
+  }
 }
 
 .hidden { display: none !important; }
