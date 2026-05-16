@@ -580,6 +580,7 @@ select:focus {
   width: 100%;
   border-collapse: collapse;
   min-width: 860px;
+  table-layout: fixed;
 }
 
 .summary-table thead th {
@@ -595,6 +596,7 @@ select:focus {
   text-align: left;
   padding: 12px 14px;
   border-bottom: 1px solid var(--line);
+  white-space: nowrap;
 }
 
 .summary-table tbody td {
@@ -602,6 +604,9 @@ select:focus {
   border-bottom: 1px solid var(--line);
   font-size: 13px;
   vertical-align: middle;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .summary-table tbody tr:nth-child(even) {
@@ -618,6 +623,21 @@ select:focus {
 .summary-table tbody td:nth-child(6) {
   text-align: center;
   white-space: nowrap;
+}
+
+.summary-table tbody td:nth-child(1) {
+  text-align: left;
+  white-space: nowrap;
+}
+
+.summary-table tbody td:nth-child(2) {
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.summary-employee-cell {
+  min-width: 0;
+  font-weight: 700;
 }
 
 .admin-panel-section[data-admin-view="summary"] > .pager {

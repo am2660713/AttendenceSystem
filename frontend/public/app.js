@@ -294,11 +294,11 @@ const renderSummary = async () => {
             </tr>
           </thead>
           <tbody>
-            ${records
+              ${records
               .map(
                 (item) => `
                   <tr>
-                    <td><strong>${item.name}</strong></td>
+                    <td class="summary-employee-cell"><strong>${item.name}</strong></td>
                     <td>${item.department}</td>
                     <td>${Number(item.daysPresent || 0)}</td>
                     <td>${Number(item.lateDays || 0)}</td>
