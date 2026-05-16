@@ -562,15 +562,22 @@ button:hover {
   }
 
   .admin-modal-card {
-    width: min(96vw, 1120px);
-    max-height: 90vh;
-    padding: 20px 22px;
+    width: min(96vw, 1360px);
+    height: 92vh;
+    max-height: 92vh;
+    padding: 22px 24px;
     border-radius: 20px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
   }
 
   .admin-panel-grid {
-    grid-template-columns: minmax(320px, 420px) minmax(340px, 1fr);
+    grid-template-columns: minmax(320px, 420px) minmax(360px, 1fr);
     align-items: start;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
   }
 
   .admin-panel-section:nth-child(3) {
@@ -578,6 +585,19 @@ button:hover {
   }
 
   .summary-grid {
-    grid-template-columns: minmax(220px, 2.2fr) repeat(4, minmax(90px, 0.7fr));
+    grid-template-columns: minmax(240px, 2.2fr) repeat(4, minmax(100px, 0.7fr));
+  }
+
+  .admin-view-pane {
+    min-height: 0;
+    overflow: auto;
+  }
+
+  .admin-panel-section {
+    min-width: 0;
+  }
+
+  #summaryTable.history {
+    max-height: none;
   }
 }
