@@ -455,6 +455,28 @@ button:hover {
   background: rgba(255, 255, 255, 0.94);
 }
 
+.password-field {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.password-field input {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.password-toggle {
+  width: auto;
+  min-width: 74px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: linear-gradient(120deg, #556e78, #738892);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+}
+
 .admin-panel-section[data-admin-view="summary"] {
   display: flex;
   flex-direction: column;
@@ -579,7 +601,6 @@ select:focus {
 .summary-table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 860px;
   table-layout: fixed;
 }
 
@@ -600,13 +621,14 @@ select:focus {
 }
 
 .summary-table tbody td {
-  padding: 13px 14px;
+  padding: 11px 12px;
   border-bottom: 1px solid var(--line);
-  font-size: 13px;
+  font-size: 12px;
   vertical-align: middle;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  line-height: 1.2;
 }
 
 .summary-table tbody tr:nth-child(even) {
@@ -628,6 +650,7 @@ select:focus {
 .summary-table tbody td:nth-child(1) {
   text-align: left;
   white-space: nowrap;
+  font-weight: 700;
 }
 
 .summary-table tbody td:nth-child(2) {
@@ -848,6 +871,10 @@ select:focus {
     flex: 1;
     min-height: 0;
     overflow: auto;
+  }
+
+  .summary-table {
+    min-width: 100%;
   }
 }
 

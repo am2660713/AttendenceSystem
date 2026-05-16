@@ -89,7 +89,10 @@
           </div>
           <p class="muted">Enter password to open admin tools.</p>
           <label for="adminPassword">Admin Password</label>
-          <input id="adminPassword" type="password" placeholder="Enter password" />
+          <div class="password-field">
+            <input id="adminPassword" type="password" placeholder="Enter password" />
+            <button id="toggleAdminPasswordBtn" class="password-toggle" type="button" aria-label="Show password">Show</button>
+          </div>
           <button id="unlockAdminBtn" class="primary" type="button">Unlock Admin</button>
           <p id="unlockMsg" class="msg"></p>
         </div>

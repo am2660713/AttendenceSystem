@@ -41,6 +41,7 @@ const employeePrevBtn = document.getElementById("employeePrevBtn");
 const employeeNextBtn = document.getElementById("employeeNextBtn");
 const employeePageInfo = document.getElementById("employeePageInfo");
 const adminPasswordInput = document.getElementById("adminPassword");
+const toggleAdminPasswordBtn = document.getElementById("toggleAdminPasswordBtn");
 const unlockAdminBtn = document.getElementById("unlockAdminBtn");
 const unlockMsg = document.getElementById("unlockMsg");
 const lockAdminBtn = document.getElementById("lockAdminBtn");
@@ -283,6 +284,14 @@ const renderSummary = async () => {
     summaryTable.innerHTML = `
       <div class="summary-table-wrap">
         <table class="summary-table">
+          <colgroup>
+            <col style="width: 32%" />
+            <col style="width: 22%" />
+            <col style="width: 10%" />
+            <col style="width: 10%" />
+            <col style="width: 13%" />
+            <col style="width: 13%" />
+          </colgroup>
           <thead>
             <tr>
               <th>Employee</th>
@@ -587,6 +596,13 @@ summaryNextBtn?.addEventListener("click", async () => {
     summaryPage += 1;
     await renderSummary();
   }
+});
+
+toggleAdminPasswordBtn?.addEventListener("click", () => {
+  const isPassword = adminPasswordInput.type === "password";
+  adminPasswordInput.type = isPassword ? "text" : "password";
+  toggleAdminPasswordBtn.textContent = isPassword ? "Hide" : "Show";
+  toggleAdminPasswordBtn.setAttribute("aria-label", isPassword ? "Hide password" : "Show password");
 });
 
 employeePrevBtn?.addEventListener("click", async () => {
