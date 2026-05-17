@@ -63,6 +63,7 @@ const adminViewButtons = document.querySelectorAll("[data-admin-view-btn]");
 const adminViewPanes = document.querySelectorAll("[data-admin-view]");
 
 let currentEmployee = null;
+let employeeToken = localStorage.getItem("attendanceEmployeeToken") || null;
 localStorage.removeItem("adminUnlocked");
 let adminUnlocked = false;
 let adminToken = null;
@@ -121,7 +122,12 @@ const getLocation = () =>
   });
 
 const renderToday = async () => {
-  const today = await callApi(`/attendance/today?employeeId=${currentEmployee.id}`);
+  const today = await callApi(
+    `/attendance/today?employeeId=${currentEmployee.id}`,
+    "GET",
+    undefined,
+    { "x-employee-token": employeeToken || "" }
+  );
   if (!today.record) {
     todayStatus.textContent = `No attendance found for ${today.today}.`;
     return;
@@ -131,7 +137,12 @@ const renderToday = async () => {
 };
 
 const renderHistory = async () => {
-  const data = await callApi(`/attendance/history?employeeId=${currentEmployee.id}`);
+  const data = await callApi(
+    `/attendance/history?employeeId=${currentEmployee.id}`,
+    "GET",
+    undefined,
+    { "x-employee-token": employeeToken || "" }
+  );
   if (!data.records.length) {
     historyEl.innerHTML = "<p class='muted'>No previous records.</p>";
     return;
@@ -481,13 +492,15 @@ loginBtn.addEventListener("click", async () => {
     const employeeId = employeeIdInput.value.trim().toUpperCase();
     if (!employeeId) throw new Error("Enter employee ID");
 
-    const { employee, message } = await callApi("/auth/login", "POST", {
+    const { employee, message, token } = await callApi("/auth/login", "POST", {
       employeeId,
       deviceToken: getDeviceToken(),
       deviceLabel: getDeviceLabel(),
     });
     currentEmployee = employee;
+    employeeToken = token;
     localStorage.setItem("attendanceEmployee", JSON.stringify(employee));
+    localStorage.setItem("attendanceEmployeeToken", token);
 
     empName.textContent = `${employee.name} (${employee.id})`;
     empDept.textContent = employee.department;
@@ -507,11 +520,16 @@ const markAttendance = async (path) => {
     setMessage(actionMsg, "Reading location...", true);
     const coords = await getLocation();
 
-    const data = await callApi(path, "POST", {
-      employeeId: currentEmployee.id,
-      latitude: coords.latitude,
-      longitude: coords.longitude,
-    });
+    const data = await callApi(
+      path,
+      "POST",
+      {
+        employeeId: currentEmployee.id,
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+      },
+      { "x-employee-token": employeeToken || "" }
+    );
 
     setMessage(actionMsg, data.message, true);
     await refresh();
@@ -525,7 +543,9 @@ checkOutBtn.addEventListener("click", () => markAttendance("/attendance/check-ou
 
 logoutBtn.addEventListener("click", () => {
   currentEmployee = null;
+  employeeToken = null;
   localStorage.removeItem("attendanceEmployee");
+  localStorage.removeItem("attendanceEmployeeToken");
   dashboardCard.classList.add("hidden");
   loginCard.classList.remove("hidden");
   employeeIdInput.value = "";
@@ -854,17 +874,21 @@ window.addEventListener("keydown", (event) => {
 
 const bootstrap = async () => {
   const cached = localStorage.getItem("attendanceEmployee");
-  if (!cached) return;
+  const cachedToken = localStorage.getItem("attendanceEmployeeToken");
+  if (!cached || !cachedToken) return;
 
   try {
     currentEmployee = JSON.parse(cached);
+    employeeToken = cachedToken;
     empName.textContent = `${currentEmployee.name} (${currentEmployee.id})`;
     empDept.textContent = currentEmployee.department;
     loginCard.classList.add("hidden");
     dashboardCard.classList.remove("hidden");
     await refresh();
   } catch {
+    employeeToken = null;
     localStorage.removeItem("attendanceEmployee");
+    localStorage.removeItem("attendanceEmployeeToken");
   }
 };
 

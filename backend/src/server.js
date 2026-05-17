@@ -9,6 +9,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const configPath = path.join(__dirname, "..", "data", "config.json");
 const adminSessions = new Map();
+const employeeSessions = new Map();
 const adminPasswordSeed = process.env.ADMIN_PASSWORD || "admin123";
 
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || "*")
@@ -23,7 +24,7 @@ const getCorsOrigin = (origin) => {
   return null;
 };
 
-const corsAllowHeaders = "Content-Type, x-admin-token";
+const corsAllowHeaders = "Content-Type, x-admin-token, x-employee-token";
 
 const sendJson = (res, statusCode, payload, origin = "*") => {
   const corsHeaders = {
@@ -160,6 +161,7 @@ const csvCell = (value) => {
 };
 
 const getAdminToken = (req) => String(req.headers["x-admin-token"] || "").trim();
+const getEmployeeToken = (req) => String(req.headers["x-employee-token"] || "").trim();
 
 const requireAdminSession = (req, res, origin) => {
   const token = getAdminToken(req);
@@ -170,6 +172,21 @@ const requireAdminSession = (req, res, origin) => {
     return null;
   }
   return token;
+};
+
+const requireEmployeeSession = (req, res, origin, employeeId) => {
+  const token = getEmployeeToken(req);
+  const session = employeeSessions.get(token);
+  if (!token || !session || session.expiresAt <= Date.now()) {
+    if (token) employeeSessions.delete(token);
+    sendJson(res, 401, { message: "Employee login required." }, origin);
+    return null;
+  }
+  if (session.employeeId !== employeeId) {
+    sendJson(res, 403, { message: "Employee token does not match this employee." }, origin);
+    return null;
+  }
+  return session;
 };
 
 const mapAttendance = (row, config) => {
@@ -304,6 +321,13 @@ const server = http.createServer(async (req, res) => {
         );
       }
 
+      const token = crypto.randomUUID();
+      employeeSessions.set(token, {
+        employeeId: employee.id,
+        deviceToken,
+        expiresAt: Date.now() + 12 * 60 * 60 * 1000,
+      });
+
       sendJson(
         res,
         200,
@@ -312,6 +336,7 @@ const server = http.createServer(async (req, res) => {
             ? "Company laptop verified. Login successful."
             : "Company laptop approved and login successful.",
           employee: { id: employee.id, name: employee.name, department: employee.department },
+          token,
         },
         corsOrigin
       );
@@ -639,6 +664,7 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "GET" && url.pathname === "/api/attendance/today") {
       const employeeId = String(url.searchParams.get("employeeId") || "").trim().toUpperCase();
       if (!employeeId) return sendJson(res, 400, { message: "employeeId is required." }, corsOrigin);
+      if (!requireEmployeeSession(req, res, corsOrigin, employeeId)) return;
 
       const today = getISTDate();
       const config = await readConfig();
@@ -656,6 +682,7 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "GET" && url.pathname === "/api/attendance/history") {
       const employeeId = String(url.searchParams.get("employeeId") || "").trim().toUpperCase();
       if (!employeeId) return sendJson(res, 400, { message: "employeeId is required." }, corsOrigin);
+      if (!requireEmployeeSession(req, res, corsOrigin, employeeId)) return;
 
       const config = await readConfig();
       const dbRes = await query(
@@ -777,12 +804,17 @@ const server = http.createServer(async (req, res) => {
       const longitude = body.longitude;
 
       if (!employeeId) return sendJson(res, 400, { message: "Employee ID is required." }, corsOrigin);
+      const employeeSession = requireEmployeeSession(req, res, corsOrigin, employeeId);
+      if (!employeeSession) return;
       if (typeof latitude !== "number" || typeof longitude !== "number") {
         return sendJson(res, 400, { message: "Latitude and longitude are required." }, corsOrigin);
       }
 
-      const empRes = await query("SELECT id FROM employees WHERE id = $1", [employeeId]);
+      const empRes = await query("SELECT id, device_token FROM employees WHERE id = $1 AND active = true", [employeeId]);
       if (!empRes.rows[0]) return sendJson(res, 404, { message: "Employee not found." }, corsOrigin);
+      if (empRes.rows[0].device_token !== employeeSession.deviceToken) {
+        return sendJson(res, 403, { message: "Company laptop verification failed." }, corsOrigin);
+      }
 
       const config = await readConfig();
       const distance = haversineMeters(latitude, longitude, config.office.latitude, config.office.longitude);
