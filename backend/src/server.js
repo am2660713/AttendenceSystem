@@ -16,6 +16,10 @@ const allowedOrigins = (process.env.ALLOWED_ORIGINS || "*")
   .split(",")
   .map((value) => value.trim())
   .filter(Boolean);
+const allowedOfficeIps = (process.env.OFFICE_ALLOWED_IPS || "")
+  .split(",")
+  .map((value) => value.trim())
+  .filter(Boolean);
 
 const getCorsOrigin = (origin) => {
   if (!origin) return "*";
@@ -50,6 +54,19 @@ const sendCsv = (res, csv, origin = "*", filename = "attendance-export.csv") => 
 };
 
 const normalizeText = (value) => String(value || "").trim().toLowerCase().replace(/\s+/g, "");
+const normalizeIp = (value) => String(value || "").trim().replace(/^::ffff:/, "");
+const getRequestIp = (req) => {
+  const forwardedFor = String(req.headers["x-forwarded-for"] || "")
+    .split(",")
+    .map((value) => normalizeIp(value))
+    .find(Boolean);
+  return forwardedFor || normalizeIp(req.socket.remoteAddress);
+};
+const isOfficeIpAllowed = (ip) => {
+  if (!allowedOfficeIps.length) return true;
+  const normalizedIp = normalizeIp(ip);
+  return allowedOfficeIps.some((allowedIp) => normalizeIp(allowedIp) === normalizedIp);
+};
 const readConfig = async () => JSON.parse(await fs.readFile(configPath, "utf8"));
 const writeConfig = async (config) => {
   await fs.writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`, "utf8");
@@ -814,6 +831,16 @@ const server = http.createServer(async (req, res) => {
       if (!empRes.rows[0]) return sendJson(res, 404, { message: "Employee not found." }, corsOrigin);
       if (empRes.rows[0].device_token !== employeeSession.deviceToken) {
         return sendJson(res, 403, { message: "Company laptop verification failed." }, corsOrigin);
+      }
+
+      const requestIp = getRequestIp(req);
+      if (!isOfficeIpAllowed(requestIp)) {
+        return sendJson(
+          res,
+          403,
+          { message: "Attendance is allowed only from the office internet connection." },
+          corsOrigin
+        );
       }
 
       const config = await readConfig();

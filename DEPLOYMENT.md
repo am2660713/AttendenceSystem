@@ -11,6 +11,7 @@
    - `PGDATABASE` = `attendance_app`
    - `PGPORT` = `5432`
    - `ALLOWED_ORIGINS` = your Vercel domain (example: `https://attendance-frontend.vercel.app`)
+   - `OFFICE_ALLOWED_IPS` = your office public IP address (example: `203.0.113.10`)
 4. Open Render backend shell and run:
    - `npm run seed`
 
@@ -35,3 +36,5 @@
 - Geofence coordinates are stored in `backend/data/config.json`.
 - On backend CORS, use exact Vercel URL in `ALLOWED_ORIGINS`.
 - For multiple domains, use comma-separated values in `ALLOWED_ORIGINS`.
+- For multiple office internet connections, use comma-separated values in `OFFICE_ALLOWED_IPS`.
+- If `OFFICE_ALLOWED_IPS` is empty, the office public IP check is disabled.
