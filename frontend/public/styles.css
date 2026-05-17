@@ -633,7 +633,8 @@ select:focus {
 
 .summary-table-wrap {
   width: 100%;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   border: 1px solid var(--line);
   border-radius: 16px;
   background: #fff;
@@ -1026,7 +1027,8 @@ select:focus {
   #adminPanelModal #summaryTable.history {
     flex: 1;
     min-height: 0;
-    overflow: visible;
+    overflow: auto;
+    padding-bottom: 0;
   }
 
   #adminPanelModal #employeeList.history {
