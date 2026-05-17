@@ -377,7 +377,8 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "GET" && url.pathname === "/api/employees") {
       if (!requireAdminSession(req, res, corsOrigin)) return;
       const { page, pageSize, offset } = getPagination(url, 10);
-      const search = normalizeText(url.searchParams.get("search"));
+      const rawSearch = String(url.searchParams.get("search") || "").trim();
+      const search = normalizeText(rawSearch);
       const department = String(url.searchParams.get("department") || "").trim();
       const clauses = ["active = true"];
       const params = [];
@@ -391,10 +392,7 @@ const server = http.createServer(async (req, res) => {
         const searchPattern = `%${search}%`;
         params.push(searchPattern);
         const searchParamIndex = params.length;
-        clauses.push(`(
-          LOWER(REPLACE(id, ' ', '')) LIKE $${searchParamIndex}
-          OR LOWER(REPLACE(name, ' ', '')) LIKE $${searchParamIndex}
-        )`);
+        clauses.push(`LOWER(REPLACE(id, ' ', '')) LIKE $${searchParamIndex}`);
       }
 
       const whereClause = clauses.join(" AND ");

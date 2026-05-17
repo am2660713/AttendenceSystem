@@ -244,11 +244,11 @@ const renderEmployees = async () => {
     employeeTotalPages = 1;
     employeeList.innerHTML = `
       <div class="empty-state">
-        <strong>Search to view employees</strong>
-        <p class="muted">Enter an employee ID or name, or choose a department, to load the employee table.</p>
+        <strong>Search by employee ID</strong>
+        <p class="muted">Enter an employee ID or choose a department to load the employee table.</p>
       </div>
     `;
-    if (employeePageInfo) employeePageInfo.textContent = "Search to view employees";
+    if (employeePageInfo) employeePageInfo.textContent = "Search by employee ID";
     if (employeePrevBtn) employeePrevBtn.disabled = true;
     if (employeeNextBtn) employeeNextBtn.disabled = true;
     return;
