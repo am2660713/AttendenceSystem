@@ -528,52 +528,11 @@ button:hover {
   background: #f6fbf9;
 }
 
-.employee-controls {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px 12px;
-  align-items: end;
-}
-
-.employee-control {
-  display: grid;
-  gap: 4px;
-  min-width: 0;
-}
-
-.employee-control-actions {
-  grid-column: 1 / -1;
-}
-
 .admin-panel-section[data-admin-view="list"] {
   display: flex;
   flex-direction: column;
   gap: 12px;
   min-height: 0;
-}
-
-.admin-panel-section[data-admin-view="list"] label {
-  font-size: 12px;
-  margin-bottom: 4px;
-  color: var(--muted);
-}
-
-.admin-panel-section[data-admin-view="list"] input,
-.admin-panel-section[data-admin-view="list"] select {
-  width: 100%;
-  padding: 8px 10px;
-  border-radius: 10px;
-  min-width: 0;
-  max-width: none;
-}
-
-.admin-panel-section[data-admin-view="list"] button.secondary.full {
-  width: 100%;
-  padding: 8px 12px;
-}
-
-.admin-panel-section[data-admin-view="list"] .muted {
-  margin-bottom: 0;
 }
 
 .pager {
@@ -1055,9 +1014,6 @@ select:focus {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .employee-controls {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 
 @media (max-width: 899px) {
@@ -1077,7 +1033,4 @@ select:focus {
     border-radius: 18px;
   }
 
-  .employee-controls {
-    grid-template-columns: 1fr;
-  }
 }

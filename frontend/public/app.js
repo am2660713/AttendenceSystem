@@ -35,8 +35,6 @@ const toggleNewAdminPasswordBtn = document.getElementById("toggleNewAdminPasswor
 const changeAdminPasswordBtn = document.getElementById("changeAdminPasswordBtn");
 const changeAdminPasswordMsg = document.getElementById("changeAdminPasswordMsg");
 const employeeList = document.getElementById("employeeList");
-const employeeSearchInput = document.getElementById("employeeSearch");
-const employeeDepartmentFilter = document.getElementById("employeeDepartment");
 const summarySearchInput = document.getElementById("summarySearch");
 const summaryDepartmentFilter = document.getElementById("summaryDepartment");
 const summaryMonth = document.getElementById("summaryMonth");
@@ -51,7 +49,6 @@ const employeePageSize = document.getElementById("employeePageSize");
 const employeePrevBtn = document.getElementById("employeePrevBtn");
 const employeeNextBtn = document.getElementById("employeeNextBtn");
 const employeePageInfo = document.getElementById("employeePageInfo");
-const applyEmployeeFiltersBtn = document.getElementById("applyEmployeeFiltersBtn");
 const adminPasswordInput = document.getElementById("adminPassword");
 const toggleAdminPasswordBtn = document.getElementById("toggleAdminPasswordBtn");
 const unlockAdminBtn = document.getElementById("unlockAdminBtn");
@@ -74,10 +71,6 @@ let summaryPage = 1;
 let summaryTotalPages = 1;
 let employeePage = 1;
 let employeeTotalPages = 1;
-let employeeSearchDebounce = null;
-let employeeDirectory = [];
-let employeeDirectoryLoaded = false;
-let employeeDirectoryLoading = null;
 const deviceTokenKey = "attendanceDeviceToken";
 const getDeviceToken = () => {
   const existing = localStorage.getItem(deviceTokenKey);
@@ -238,61 +231,21 @@ const getAdminFilters = (searchInput, departmentInput) => ({
   department: String(departmentInput?.value || "All").trim(),
 });
 
-const loadEmployeeDirectory = async () => {
-  if (employeeDirectoryLoaded) return employeeDirectory;
-  if (employeeDirectoryLoading) return employeeDirectoryLoading;
-
-  employeeDirectoryLoading = (async () => {
-    const pageSize = 50;
-    let page = 1;
-    let totalPages = 1;
-    const records = [];
-
-    do {
-      const data = await callApi(
-        `/employees?page=${page}&pageSize=${pageSize}`,
-        "GET",
-        undefined,
-        { "x-admin-token": adminToken || "" }
-      );
-
-      records.push(...(Array.isArray(data.employees) ? data.employees : []));
-      totalPages = Number(data.totalPages || 1);
-      page += 1;
-    } while (page <= totalPages);
-
-    employeeDirectory = records;
-    employeeDirectoryLoaded = true;
-    employeeDirectoryLoading = null;
-    return employeeDirectory;
-  })().catch((error) => {
-    employeeDirectoryLoading = null;
-    throw error;
-  });
-
-  return employeeDirectoryLoading;
-};
-
 const renderEmployees = async () => {
   const pageSize = Number(employeePageSize?.value || 10);
-  const filters = getAdminFilters(employeeSearchInput, employeeDepartmentFilter);
-  const records = await loadEmployeeDirectory();
-  const normalizedSearch = normalizeText(filters.search);
-  const filtered = records.filter((employee) => {
-    const matchesDepartment = !filters.department || filters.department === "All" || employee.department === filters.department;
-    const matchesSearch = !normalizedSearch
-      || normalizeText(employee.id).includes(normalizedSearch)
-      || normalizeText(employee.name).includes(normalizedSearch);
-    return matchesDepartment && matchesSearch;
+  const params = new URLSearchParams({
+    page: String(employeePage),
+    pageSize: String(pageSize),
   });
-
-  employeeTotalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const data = await callApi(`/employees?${params.toString()}`, "GET", undefined, {
+    "x-admin-token": adminToken || "",
+  });
+  employeeTotalPages = Number(data.totalPages || 1);
   if (employeePage > employeeTotalPages) employeePage = employeeTotalPages;
-  const start = (employeePage - 1) * pageSize;
-  const pageItems = filtered.slice(start, start + pageSize);
+  const pageItems = Array.isArray(data.employees) ? data.employees : [];
 
   if (!pageItems.length) {
-    employeeList.innerHTML = "<p class='muted'>No employees found for the current filters.</p>";
+    employeeList.innerHTML = "<p class='muted'>No employees found.</p>";
     if (employeePageInfo) employeePageInfo.textContent = `Page ${employeePage} of ${employeeTotalPages}`;
     if (employeePrevBtn) employeePrevBtn.disabled = employeePage <= 1;
     if (employeeNextBtn) employeeNextBtn.disabled = employeePage >= employeeTotalPages;
@@ -348,11 +301,6 @@ const renderEmployees = async () => {
   if (employeePageInfo) employeePageInfo.textContent = `Page ${employeePage} of ${employeeTotalPages}`;
   if (employeePrevBtn) employeePrevBtn.disabled = employeePage <= 1;
   if (employeeNextBtn) employeeNextBtn.disabled = employeePage >= employeeTotalPages;
-};
-
-const applyEmployeeFilters = async () => {
-  employeePage = 1;
-  await renderEmployees();
 };
 
 const applySummaryFilters = async () => {
@@ -598,8 +546,6 @@ addEmployeeBtn.addEventListener("click", async () => {
     newEmployeeId.value = "";
     newEmployeeName.value = "";
     newEmployeeDepartment.value = "";
-    employeeDirectoryLoaded = false;
-    employeeDirectory = [];
     await renderEmployees();
     await renderSummary();
   } catch (error) {
@@ -636,8 +582,6 @@ employeeList.addEventListener("click", async (event) => {
       );
       setMessage(adminMsg, data.message, true);
     }
-    employeeDirectoryLoaded = false;
-    employeeDirectory = [];
     await renderEmployees();
     await renderSummary();
   } catch (error) {
@@ -676,8 +620,6 @@ importEmployeesInput.addEventListener("change", async () => {
       true
     );
     importEmployeesInput.value = "";
-    employeeDirectoryLoaded = false;
-    employeeDirectory = [];
     await renderEmployees();
     await renderSummary();
   } catch (error) {
@@ -719,30 +661,6 @@ summaryPageSize?.addEventListener("change", async () => {
 });
 
 employeePageSize?.addEventListener("change", async () => {
-  employeePage = 1;
-  await renderEmployees();
-});
-
-applyEmployeeFiltersBtn?.addEventListener("click", async () => {
-  await applyEmployeeFilters();
-});
-
-employeeSearchInput?.addEventListener("keydown", async (event) => {
-  if (event.key === "Enter") {
-    event.preventDefault();
-    await applyEmployeeFilters();
-  }
-});
-
-employeeSearchInput?.addEventListener("input", () => {
-  if (employeeSearchDebounce) clearTimeout(employeeSearchDebounce);
-  employeeSearchDebounce = setTimeout(async () => {
-    employeePage = 1;
-    await renderEmployees();
-  }, 300);
-});
-
-employeeDepartmentFilter?.addEventListener("change", async () => {
   employeePage = 1;
   await renderEmployees();
 });
