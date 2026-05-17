@@ -484,6 +484,23 @@ button:hover {
   gap: 12px;
 }
 
+.summary-controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 12px;
+  align-items: end;
+}
+
+.summary-control {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.summary-control-actions {
+  grid-column: 1 / -1;
+}
+
 .admin-panel-section[data-admin-view="summary"] label {
   font-size: 12px;
   margin-bottom: 4px;
@@ -492,14 +509,15 @@ button:hover {
 
 .admin-panel-section[data-admin-view="summary"] input,
 .admin-panel-section[data-admin-view="summary"] select {
+  width: 100%;
   padding: 8px 10px;
   border-radius: 10px;
   min-width: 0;
-  max-width: 260px;
+  max-width: none;
 }
 
 .admin-panel-section[data-admin-view="summary"] button.secondary.full {
-  width: fit-content;
+  width: 100%;
   padding: 8px 12px;
 }
 
@@ -585,9 +603,9 @@ select:focus {
   flex: 1 1 auto;
   min-height: 0;
   max-height: none;
-  overflow: visible;
+  overflow: auto;
   border-top: 0;
-  padding-bottom: 8px;
+  padding-bottom: 12px;
 }
 
 .summary-table-wrap {
@@ -876,6 +894,10 @@ select:focus {
 
   .summary-table {
     min-width: 100%;
+  }
+
+  .summary-controls {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 

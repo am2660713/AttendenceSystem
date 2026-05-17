@@ -152,24 +152,36 @@
 
             <section class="admin-panel-section admin-view-pane hidden" data-admin-view="summary">
               <h3>HR Monthly Summary</h3>
-              <label for="summaryMonth">Month</label>
-              <input id="summaryMonth" type="month" />
-              <label for="summarySearch">Search employee</label>
-              <input id="summarySearch" placeholder="Search by name or ID" />
-              <label for="summaryDepartment">Department</label>
-              <select id="summaryDepartment">
-                <option value="All">All departments</option>
-                <option value="Software">Software</option>
-                <option value="Hardware">Hardware</option>
-                <option value="Graphics">Graphics</option>
-                <option value="Management">Management</option>
-              </select>
-              <label for="summaryPageSize">Rows per page</label>
-              <select id="summaryPageSize">
-                <option value="10">10</option>
-                <option value="20">20</option>
-              </select>
-              <button id="loadSummaryBtn" class="secondary full" type="button">Apply Filters</button>
+              <div class="summary-controls">
+                <div class="summary-control">
+                  <label for="summaryMonth">Month</label>
+                  <input id="summaryMonth" type="month" />
+                </div>
+                <div class="summary-control">
+                  <label for="summarySearch">Search employee</label>
+                  <input id="summarySearch" placeholder="Search by name or ID" />
+                </div>
+                <div class="summary-control">
+                  <label for="summaryDepartment">Department</label>
+                  <select id="summaryDepartment">
+                    <option value="All">All departments</option>
+                    <option value="Software">Software</option>
+                    <option value="Hardware">Hardware</option>
+                    <option value="Graphics">Graphics</option>
+                    <option value="Management">Management</option>
+                  </select>
+                </div>
+                <div class="summary-control">
+                  <label for="summaryPageSize">Rows per page</label>
+                  <select id="summaryPageSize">
+                    <option value="10">10</option>
+                    <option value="20">20</option>
+                  </select>
+                </div>
+                <div class="summary-control summary-control-actions">
+                  <button id="loadSummaryBtn" class="secondary full" type="button">Apply Filters</button>
+                </div>
+              </div>
               <div id="summaryStats" class="status"></div>
               <div id="summaryTable" class="history"></div>
               <div class="pager">
