@@ -3,7 +3,8 @@
     "name": "Main Office",
     "latitude": 18.574619,
     "longitude": 73.954673,
-    "radiusMeters": 150
+    "radiusMeters": 150,
+    "allowedIps": []
   },
   "timezone": "Asia/Kolkata",
   "shift": {

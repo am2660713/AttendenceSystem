@@ -55,6 +55,11 @@ const sendCsv = (res, csv, origin = "*", filename = "attendance-export.csv") => 
 
 const normalizeText = (value) => String(value || "").trim().toLowerCase().replace(/\s+/g, "");
 const normalizeIp = (value) => String(value || "").trim().replace(/^::ffff:/, "");
+const parseIpList = (value) =>
+  String(value || "")
+    .split(/[\n,]+/)
+    .map((item) => normalizeIp(item))
+    .filter(Boolean);
 const getRequestIp = (req) => {
   const forwardedFor = String(req.headers["x-forwarded-for"] || "")
     .split(",")
@@ -62,10 +67,12 @@ const getRequestIp = (req) => {
     .find(Boolean);
   return forwardedFor || normalizeIp(req.socket.remoteAddress);
 };
-const isOfficeIpAllowed = (ip) => {
-  if (!allowedOfficeIps.length) return true;
+const isOfficeIpAllowedForConfig = (ip, config) => {
+  const configIps = Array.isArray(config?.office?.allowedIps) ? config.office.allowedIps : [];
+  const activeAllowedIps = configIps.length ? configIps : allowedOfficeIps;
+  if (!activeAllowedIps.length) return true;
   const normalizedIp = normalizeIp(ip);
-  return allowedOfficeIps.some((allowedIp) => normalizeIp(allowedIp) === normalizedIp);
+  return activeAllowedIps.some((allowedIp) => normalizeIp(allowedIp) === normalizedIp);
 };
 const readConfig = async () => JSON.parse(await fs.readFile(configPath, "utf8"));
 const writeConfig = async (config) => {
@@ -552,6 +559,9 @@ const server = http.createServer(async (req, res) => {
       const latitude = Number(body.latitude);
       const longitude = Number(body.longitude);
       const radiusMeters = Number(body.radiusMeters);
+      const allowedIps = Array.isArray(body.allowedIps)
+        ? body.allowedIps.map((item) => normalizeIp(item)).filter(Boolean)
+        : parseIpList(body.allowedIps);
 
       if (!name) {
         sendJson(res, 400, { message: "Office name is required." }, corsOrigin);
@@ -573,6 +583,7 @@ const server = http.createServer(async (req, res) => {
         latitude,
         longitude,
         radiusMeters,
+        allowedIps,
       };
 
       await writeConfig(config);
@@ -833,8 +844,9 @@ const server = http.createServer(async (req, res) => {
         return sendJson(res, 403, { message: "Company laptop verification failed." }, corsOrigin);
       }
 
+      const config = await readConfig();
       const requestIp = getRequestIp(req);
-      if (!isOfficeIpAllowed(requestIp)) {
+      if (!isOfficeIpAllowedForConfig(requestIp, config)) {
         return sendJson(
           res,
           403,
@@ -843,7 +855,6 @@ const server = http.createServer(async (req, res) => {
         );
       }
 
-      const config = await readConfig();
       const distance = haversineMeters(latitude, longitude, config.office.latitude, config.office.longitude);
       if (distance > config.office.radiusMeters) {
         return sendJson(

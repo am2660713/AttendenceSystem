@@ -334,7 +334,22 @@ input {
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-input:focus {
+textarea {
+  width: 100%;
+  border: 1px solid #ccd6ce;
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 10px;
+  font: inherit;
+  font-size: 15px;
+  outline: none;
+  resize: vertical;
+  min-height: 94px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+input:focus,
+textarea:focus {
   border-color: var(--primary-soft);
   box-shadow: 0 0 0 3px rgba(20, 107, 128, 0.14);
 }
@@ -451,7 +466,8 @@ button:hover {
 }
 
 .admin-view-pane input,
-.admin-view-pane select {
+.admin-view-pane select,
+.admin-view-pane textarea {
   background: rgba(255, 255, 255, 0.94);
 }
 

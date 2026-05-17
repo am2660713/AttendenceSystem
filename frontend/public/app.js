@@ -25,6 +25,7 @@ const officeNameInput = document.getElementById("officeName");
 const officeLatitudeInput = document.getElementById("officeLatitude");
 const officeLongitudeInput = document.getElementById("officeLongitude");
 const officeRadiusInput = document.getElementById("officeRadius");
+const officeAllowedIpsInput = document.getElementById("officeAllowedIps");
 const saveOfficeLocationBtn = document.getElementById("saveOfficeLocationBtn");
 const officeLocationMsg = document.getElementById("officeLocationMsg");
 const currentAdminPasswordInput = document.getElementById("currentAdminPassword");
@@ -214,7 +215,7 @@ const applyAdminVisibility = () => {
 };
 
 const loadOfficeSettings = async () => {
-  if (!officeNameInput || !officeLatitudeInput || !officeLongitudeInput || !officeRadiusInput) return;
+  if (!officeNameInput || !officeLatitudeInput || !officeLongitudeInput || !officeRadiusInput || !officeAllowedIpsInput) return;
 
   try {
     const config = await callApi("/config");
@@ -223,6 +224,7 @@ const loadOfficeSettings = async () => {
     officeLatitudeInput.value = office.latitude ?? "";
     officeLongitudeInput.value = office.longitude ?? "";
     officeRadiusInput.value = office.radiusMeters ?? "";
+    officeAllowedIpsInput.value = Array.isArray(office.allowedIps) ? office.allowedIps.join("\n") : "";
     if (officeLocationMsg) officeLocationMsg.textContent = "";
   } catch (error) {
     if (officeLocationMsg) setMessage(officeLocationMsg, error.message);
@@ -740,6 +742,10 @@ saveOfficeLocationBtn?.addEventListener("click", async () => {
     const latitude = Number(officeLatitudeInput.value);
     const longitude = Number(officeLongitudeInput.value);
     const radiusMeters = Number(officeRadiusInput.value);
+    const allowedIps = officeAllowedIpsInput.value
+      .split(/[\n,]+/)
+      .map((value) => value.trim())
+      .filter(Boolean);
 
     if (!name) throw new Error("Office name is required.");
     if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || !Number.isFinite(radiusMeters)) {
@@ -749,7 +755,7 @@ saveOfficeLocationBtn?.addEventListener("click", async () => {
     const data = await callApi(
       "/admin/update-office",
       "POST",
-      { name, latitude, longitude, radiusMeters },
+      { name, latitude, longitude, radiusMeters, allowedIps },
       { "x-admin-token": adminToken || "" }
     );
 
