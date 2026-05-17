@@ -392,7 +392,10 @@ const server = http.createServer(async (req, res) => {
         const searchPattern = `%${search}%`;
         params.push(searchPattern);
         const searchParamIndex = params.length;
-        clauses.push(`LOWER(REPLACE(id, ' ', '')) LIKE $${searchParamIndex}`);
+        clauses.push(`(
+          LOWER(REPLACE(id, ' ', '')) LIKE $${searchParamIndex}
+          OR LOWER(REPLACE(name, ' ', '')) LIKE $${searchParamIndex}
+        )`);
       }
 
       const whereClause = clauses.join(" AND ");
