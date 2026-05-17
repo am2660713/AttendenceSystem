@@ -75,6 +75,9 @@ let summaryTotalPages = 1;
 let employeePage = 1;
 let employeeTotalPages = 1;
 let employeeSearchDebounce = null;
+let employeeDirectory = [];
+let employeeDirectoryLoaded = false;
+let employeeDirectoryLoading = null;
 const deviceTokenKey = "attendanceDeviceToken";
 const getDeviceToken = () => {
   const existing = localStorage.getItem(deviceTokenKey);
@@ -235,25 +238,64 @@ const getAdminFilters = (searchInput, departmentInput) => ({
   department: String(departmentInput?.value || "All").trim(),
 });
 
+const loadEmployeeDirectory = async () => {
+  if (employeeDirectoryLoaded) return employeeDirectory;
+  if (employeeDirectoryLoading) return employeeDirectoryLoading;
+
+  employeeDirectoryLoading = (async () => {
+    const pageSize = 50;
+    let page = 1;
+    let totalPages = 1;
+    const records = [];
+
+    do {
+      const data = await callApi(
+        `/employees?page=${page}&pageSize=${pageSize}`,
+        "GET",
+        undefined,
+        { "x-admin-token": adminToken || "" }
+      );
+
+      records.push(...(Array.isArray(data.employees) ? data.employees : []));
+      totalPages = Number(data.totalPages || 1);
+      page += 1;
+    } while (page <= totalPages);
+
+    employeeDirectory = records;
+    employeeDirectoryLoaded = true;
+    employeeDirectoryLoading = null;
+    return employeeDirectory;
+  })().catch((error) => {
+    employeeDirectoryLoading = null;
+    throw error;
+  });
+
+  return employeeDirectoryLoading;
+};
+
 const renderEmployees = async () => {
   const pageSize = Number(employeePageSize?.value || 10);
   const filters = getAdminFilters(employeeSearchInput, employeeDepartmentFilter);
-  const params = new URLSearchParams({
-    page: String(employeePage),
-    pageSize: String(pageSize),
+  const records = await loadEmployeeDirectory();
+  const normalizedSearch = normalizeText(filters.search);
+  const filtered = records.filter((employee) => {
+    const matchesDepartment = !filters.department || filters.department === "All" || employee.department === filters.department;
+    const matchesSearch = !normalizedSearch
+      || normalizeText(employee.id).includes(normalizedSearch)
+      || normalizeText(employee.name).includes(normalizedSearch);
+    return matchesDepartment && matchesSearch;
   });
-  if (filters.search) params.set("search", filters.search);
-  if (filters.department && filters.department !== "All") params.set("department", filters.department);
 
-  const data = await callApi(`/employees?${params.toString()}`, "GET", undefined, {
-    "x-admin-token": adminToken || "",
-  });
-  employeeTotalPages = Number(data.totalPages || 1);
-  if (!data.employees.length) {
+  employeeTotalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  if (employeePage > employeeTotalPages) employeePage = employeeTotalPages;
+  const start = (employeePage - 1) * pageSize;
+  const pageItems = filtered.slice(start, start + pageSize);
+
+  if (!pageItems.length) {
     employeeList.innerHTML = "<p class='muted'>No employees found for the current filters.</p>";
     if (employeePageInfo) employeePageInfo.textContent = `Page ${employeePage} of ${employeeTotalPages}`;
-    if (employeePrevBtn) employeePrevBtn.disabled = (data.page || employeePage) <= 1;
-    if (employeeNextBtn) employeeNextBtn.disabled = (data.page || employeePage) >= employeeTotalPages;
+    if (employeePrevBtn) employeePrevBtn.disabled = employeePage <= 1;
+    if (employeeNextBtn) employeeNextBtn.disabled = employeePage >= employeeTotalPages;
     return;
   }
 
@@ -275,7 +317,7 @@ const renderEmployees = async () => {
           </tr>
         </thead>
         <tbody>
-          ${data.employees
+          ${pageItems
             .map(
               (emp) => `
                 <tr data-employee-id="${emp.id}">
@@ -303,9 +345,9 @@ const renderEmployees = async () => {
       </table>
     </div>
   `;
-  if (employeePageInfo) employeePageInfo.textContent = `Page ${data.page || employeePage} of ${employeeTotalPages}`;
-  if (employeePrevBtn) employeePrevBtn.disabled = (data.page || employeePage) <= 1;
-  if (employeeNextBtn) employeeNextBtn.disabled = (data.page || employeePage) >= employeeTotalPages;
+  if (employeePageInfo) employeePageInfo.textContent = `Page ${employeePage} of ${employeeTotalPages}`;
+  if (employeePrevBtn) employeePrevBtn.disabled = employeePage <= 1;
+  if (employeeNextBtn) employeeNextBtn.disabled = employeePage >= employeeTotalPages;
 };
 
 const applyEmployeeFilters = async () => {
@@ -556,6 +598,8 @@ addEmployeeBtn.addEventListener("click", async () => {
     newEmployeeId.value = "";
     newEmployeeName.value = "";
     newEmployeeDepartment.value = "";
+    employeeDirectoryLoaded = false;
+    employeeDirectory = [];
     await renderEmployees();
     await renderSummary();
   } catch (error) {
@@ -592,6 +636,8 @@ employeeList.addEventListener("click", async (event) => {
       );
       setMessage(adminMsg, data.message, true);
     }
+    employeeDirectoryLoaded = false;
+    employeeDirectory = [];
     await renderEmployees();
     await renderSummary();
   } catch (error) {
@@ -630,6 +676,8 @@ importEmployeesInput.addEventListener("change", async () => {
       true
     );
     importEmployeesInput.value = "";
+    employeeDirectoryLoaded = false;
+    employeeDirectory = [];
     await renderEmployees();
     await renderSummary();
   } catch (error) {
