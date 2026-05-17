@@ -256,10 +256,10 @@ const renderEmployees = async () => {
     <div class="employee-table-wrap">
       <table class="employee-table">
         <colgroup>
-          <col style="width: 28%" />
-          <col style="width: 18%" />
-          <col style="width: 34%" />
-          <col style="width: 20%" />
+          <col style="width: 280px" />
+          <col style="width: 180px" />
+          <col style="width: 760px" />
+          <col style="width: 260px" />
         </colgroup>
         <thead>
           <tr>

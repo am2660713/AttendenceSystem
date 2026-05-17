@@ -771,18 +771,19 @@ select:focus {
 .employee-table-wrap {
   width: 100%;
   overflow-x: auto;
-  overflow-y: hidden;
+  overflow-y: auto;
   border: 1px solid var(--line);
   border-radius: 16px;
   background: #fff;
+  padding-bottom: 6px;
   -webkit-overflow-scrolling: touch;
 }
 
 .employee-table {
-  width: 100%;
+  width: 1480px;
   border-collapse: collapse;
   table-layout: fixed;
-  min-width: 940px;
+  min-width: 1480px;
 }
 
 .employee-table thead th {
@@ -842,6 +843,20 @@ select:focus {
 .employee-actions-cell .mini-secondary,
 .employee-actions-cell .mini-danger {
   margin-top: 0;
+}
+
+.employee-table-wrap::-webkit-scrollbar {
+  height: 12px;
+}
+
+.employee-table-wrap::-webkit-scrollbar-track {
+  background: #eef4f1;
+  border-radius: 999px;
+}
+
+.employee-table-wrap::-webkit-scrollbar-thumb {
+  background: #8aa5ad;
+  border-radius: 999px;
 }
 
 .admin-tab {
@@ -1009,7 +1024,7 @@ select:focus {
   }
 
   .employee-table {
-    min-width: 940px;
+    min-width: 1480px;
   }
 
   .summary-controls {
