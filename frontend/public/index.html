@@ -193,17 +193,25 @@
 
             <section class="admin-panel-section admin-view-pane hidden full-width" data-admin-view="list">
               <h3>Employee List</h3>
-              <label for="employeeSearch">Search employee</label>
-              <input id="employeeSearch" placeholder="Search by name or ID" />
-              <label for="employeeDepartment">Department</label>
-              <select id="employeeDepartment">
-                <option value="All">All departments</option>
-                <option value="Software">Software</option>
-                <option value="Hardware">Hardware</option>
-                <option value="Graphics">Graphics</option>
-                <option value="Management">Management</option>
-              </select>
-              <button id="applyEmployeeFiltersBtn" class="secondary full" type="button">Apply Filters</button>
+              <div class="employee-controls">
+                <div class="employee-control">
+                  <label for="employeeSearch">Search employee</label>
+                  <input id="employeeSearch" placeholder="Search by name or ID" />
+                </div>
+                <div class="employee-control">
+                  <label for="employeeDepartment">Department</label>
+                  <select id="employeeDepartment">
+                    <option value="All">All departments</option>
+                    <option value="Software">Software</option>
+                    <option value="Hardware">Hardware</option>
+                    <option value="Graphics">Graphics</option>
+                    <option value="Management">Management</option>
+                  </select>
+                </div>
+                <div class="employee-control employee-control-actions">
+                  <button id="applyEmployeeFiltersBtn" class="secondary full" type="button">Search Employees</button>
+                </div>
+              </div>
               <div id="employeeList" class="history"></div>
               <div class="pager">
                 <label for="employeePageSize" class="pager-label">Rows per page</label>

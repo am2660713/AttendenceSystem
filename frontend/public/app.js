@@ -237,6 +237,22 @@ const getAdminFilters = (searchInput, departmentInput) => ({
 const renderEmployees = async () => {
   const pageSize = Number(employeePageSize?.value || 10);
   const filters = getAdminFilters(employeeSearchInput, employeeDepartmentFilter);
+  const hasFilters = Boolean(filters.search) || (filters.department && filters.department !== "All");
+
+  if (!hasFilters) {
+    employeeTotalPages = 1;
+    employeeList.innerHTML = `
+      <div class="empty-state">
+        <strong>Search to view employees</strong>
+        <p class="muted">Enter an employee ID or name, or choose a department, to load the employee table.</p>
+      </div>
+    `;
+    if (employeePageInfo) employeePageInfo.textContent = "Search to view employees";
+    if (employeePrevBtn) employeePrevBtn.disabled = true;
+    if (employeeNextBtn) employeeNextBtn.disabled = true;
+    return;
+  }
+
   const params = new URLSearchParams({
     page: String(employeePage),
     pageSize: String(pageSize),
@@ -251,30 +267,57 @@ const renderEmployees = async () => {
   if (!data.employees.length) {
     employeeList.innerHTML = "<p class='muted'>No employees found for the current filters.</p>";
     if (employeePageInfo) employeePageInfo.textContent = `Page ${employeePage} of ${employeeTotalPages}`;
+    if (employeePrevBtn) employeePrevBtn.disabled = (data.page || employeePage) <= 1;
+    if (employeeNextBtn) employeeNextBtn.disabled = (data.page || employeePage) >= employeeTotalPages;
     return;
   }
 
-  employeeList.innerHTML = data.employees
-    .map(
-      (emp) =>
-        `<div class="record employee-row" data-employee-id="${emp.id}">
-          <div>
-            <strong>${emp.id}</strong><br/>
-            ${emp.name}<br/>
-            ${emp.department}<br/>
-            <span class="pin-badge">${
-              emp.deviceBound
-                ? `Approved company laptop${emp.deviceLabel ? `: ${emp.deviceLabel}` : ""}`
-                : "Laptop not bound yet"
-            }</span>
-          </div>
-          <div class="employee-actions">
-            <button class="mini-secondary reset-device-btn" data-employee-id="${emp.id}" type="button">Reset Laptop</button>
-            <button class="mini-danger remove-employee-btn" data-employee-id="${emp.id}" type="button">Remove</button>
-          </div>
-        </div>`
-    )
-    .join("");
+  employeeList.innerHTML = `
+    <div class="employee-table-wrap">
+      <table class="employee-table">
+        <colgroup>
+          <col style="width: 28%" />
+          <col style="width: 18%" />
+          <col style="width: 34%" />
+          <col style="width: 20%" />
+        </colgroup>
+        <thead>
+          <tr>
+            <th>Employee</th>
+            <th>Department</th>
+            <th>Laptop Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${data.employees
+            .map(
+              (emp) => `
+                <tr data-employee-id="${emp.id}">
+                  <td class="employee-name-cell">
+                    <strong>${emp.name}</strong>
+                    <span class="employee-code">${emp.id}</span>
+                  </td>
+                  <td>${emp.department}</td>
+                  <td>
+                    <span class="pin-badge">${
+                      emp.deviceBound
+                        ? `Approved company laptop${emp.deviceLabel ? `: ${emp.deviceLabel}` : ""}`
+                        : "Laptop not bound yet"
+                    }</span>
+                  </td>
+                  <td class="employee-actions-cell">
+                    <button class="mini-secondary reset-device-btn" data-employee-id="${emp.id}" type="button">Reset Laptop</button>
+                    <button class="mini-danger remove-employee-btn" data-employee-id="${emp.id}" type="button">Remove</button>
+                  </td>
+                </tr>
+              `
+            )
+            .join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
   if (employeePageInfo) employeePageInfo.textContent = `Page ${data.page || employeePage} of ${employeeTotalPages}`;
   if (employeePrevBtn) employeePrevBtn.disabled = (data.page || employeePage) <= 1;
   if (employeeNextBtn) employeeNextBtn.disabled = (data.page || employeePage) >= employeeTotalPages;

@@ -528,6 +528,54 @@ button:hover {
   background: #f6fbf9;
 }
 
+.employee-controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 12px;
+  align-items: end;
+}
+
+.employee-control {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.employee-control-actions {
+  grid-column: 1 / -1;
+}
+
+.admin-panel-section[data-admin-view="list"] {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+}
+
+.admin-panel-section[data-admin-view="list"] label {
+  font-size: 12px;
+  margin-bottom: 4px;
+  color: var(--muted);
+}
+
+.admin-panel-section[data-admin-view="list"] input,
+.admin-panel-section[data-admin-view="list"] select {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 10px;
+  min-width: 0;
+  max-width: none;
+}
+
+.admin-panel-section[data-admin-view="list"] button.secondary.full {
+  width: 100%;
+  padding: 8px 12px;
+}
+
+.admin-panel-section[data-admin-view="list"] .muted {
+  margin-bottom: 0;
+}
+
 .pager {
   display: flex;
   flex-wrap: wrap;
@@ -738,6 +786,103 @@ select:focus {
   font-weight: 700;
 }
 
+#employeeList.history {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+  overflow: auto;
+  border-top: 0;
+  padding-bottom: 12px;
+}
+
+.empty-state {
+  padding: 16px 18px;
+  border: 1px dashed #82b7ab;
+  border-radius: 16px;
+  background: #f6fbf9;
+  display: grid;
+  gap: 6px;
+}
+
+.empty-state strong {
+  color: var(--primary);
+  font-size: 15px;
+}
+
+.employee-table-wrap {
+  width: 100%;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #fff;
+}
+
+.employee-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  min-width: 0;
+}
+
+.employee-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: linear-gradient(180deg, #f5f8f6, #ecf3ef);
+  color: var(--primary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 11px;
+  font-weight: 800;
+  text-align: left;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+.employee-table tbody td {
+  padding: 11px 12px;
+  border-bottom: 1px solid var(--line);
+  font-size: 12px;
+  vertical-align: middle;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.25;
+}
+
+.employee-table tbody tr:nth-child(even) {
+  background: #fafdfb;
+}
+
+.employee-table tbody tr:hover {
+  background: #f3f9f7;
+}
+
+.employee-name-cell {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.employee-code {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.employee-actions-cell {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-start;
+}
+
+.employee-actions-cell .mini-secondary,
+.employee-actions-cell .mini-danger {
+  margin-top: 0;
+}
+
 .admin-tab {
   position: fixed;
   right: 14px;
@@ -892,11 +1037,25 @@ select:focus {
     overflow: visible;
   }
 
+  #adminPanelModal #employeeList.history {
+    flex: 1;
+    min-height: 0;
+    overflow: visible;
+  }
+
   .summary-table {
     min-width: 100%;
   }
 
+  .employee-table {
+    min-width: 100%;
+  }
+
   .summary-controls {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .employee-controls {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -916,5 +1075,9 @@ select:focus {
     width: min(98vw, 760px);
     max-height: 92vh;
     border-radius: 18px;
+  }
+
+  .employee-controls {
+    grid-template-columns: 1fr;
   }
 }
