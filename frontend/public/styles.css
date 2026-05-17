@@ -770,17 +770,19 @@ select:focus {
 
 .employee-table-wrap {
   width: 100%;
-  overflow: auto;
+  overflow-x: auto;
+  overflow-y: hidden;
   border: 1px solid var(--line);
   border-radius: 16px;
   background: #fff;
+  -webkit-overflow-scrolling: touch;
 }
 
 .employee-table {
   width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
-  min-width: 0;
+  min-width: 940px;
 }
 
 .employee-table thead th {
@@ -1007,7 +1009,7 @@ select:focus {
   }
 
   .employee-table {
-    min-width: 100%;
+    min-width: 940px;
   }
 
   .summary-controls {
