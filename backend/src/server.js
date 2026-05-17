@@ -377,15 +377,36 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "GET" && url.pathname === "/api/employees") {
       if (!requireAdminSession(req, res, corsOrigin)) return;
       const { page, pageSize, offset } = getPagination(url, 10);
-      const countRes = await query("SELECT COUNT(*)::int AS count FROM employees WHERE active = true");
+      const search = normalizeText(url.searchParams.get("search"));
+      const department = String(url.searchParams.get("department") || "").trim();
+      const clauses = ["active = true"];
+      const params = [];
+
+      if (department && department !== "All") {
+        params.push(department);
+        clauses.push(`department = $${params.length}`);
+      }
+
+      if (search) {
+        const searchPattern = `%${search}%`;
+        params.push(searchPattern);
+        const searchParamIndex = params.length;
+        clauses.push(`(
+          LOWER(REPLACE(id, ' ', '')) LIKE $${searchParamIndex}
+          OR LOWER(REPLACE(name, ' ', '')) LIKE $${searchParamIndex}
+        )`);
+      }
+
+      const whereClause = clauses.join(" AND ");
+      const countRes = await query(`SELECT COUNT(*)::int AS count FROM employees WHERE ${whereClause}`, params);
       const total = countRes.rows[0].count;
       const dbRes = await query(
         `SELECT id, name, department, device_token, device_label, device_bound_at
          FROM employees
-         WHERE active = true
+         WHERE ${whereClause}
          ORDER BY id
          LIMIT $1 OFFSET $2`,
-        [pageSize, offset]
+        [...params, pageSize, offset]
       );
       sendJson(
         res,
@@ -653,6 +674,8 @@ const server = http.createServer(async (req, res) => {
       if (!requireAdminSession(req, res, corsOrigin)) return;
 
       const month = String(url.searchParams.get("month") || "").trim();
+      const search = normalizeText(url.searchParams.get("search"));
+      const department = String(url.searchParams.get("department") || "").trim();
       const config = await readConfig();
       const { start, end, month: safeMonth } = getMonthBounds(month);
       const { page, pageSize, offset } = getPagination(url, 10);
@@ -701,8 +724,25 @@ const server = http.createServer(async (req, res) => {
         month: safeMonth,
       }));
 
-      const total = allRecords.length;
-      const records = allRecords.slice(offset, offset + pageSize);
+      const filteredRecords = allRecords.filter((item) => {
+        const matchesDepartment = !department || department === "All" || item.department === department;
+        const normalizedItem = normalizeText(`${item.employeeId} ${item.name}`);
+        const matchesSearch = !search || normalizedItem.includes(search);
+        return matchesDepartment && matchesSearch;
+      });
+
+      const total = filteredRecords.length;
+      const records = filteredRecords.slice(offset, offset + pageSize);
+      const totals = filteredRecords.reduce(
+        (acc, item) => {
+          acc.daysPresent += Number(item.daysPresent || 0);
+          acc.lateDays += Number(item.lateDays || 0);
+          acc.overtimeHours += Number(item.overtimeHours || 0);
+          acc.totalHours += Number(item.totalHours || 0);
+          return acc;
+        },
+        { daysPresent: 0, lateDays: 0, overtimeHours: 0, totalHours: 0 }
+      );
 
       sendJson(
         res,
@@ -715,6 +755,13 @@ const server = http.createServer(async (req, res) => {
           pageSize,
           total,
           totalPages: Math.max(1, Math.ceil(total / pageSize)),
+          stats: {
+            employees: total,
+            presentDays: totals.daysPresent,
+            lateDays: totals.lateDays,
+            overtimeHours: Number(totals.overtimeHours.toFixed(2)),
+            totalHours: Number(totals.totalHours.toFixed(2)),
+          },
         },
         corsOrigin
       );

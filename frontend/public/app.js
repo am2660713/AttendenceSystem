@@ -35,6 +35,10 @@ const toggleNewAdminPasswordBtn = document.getElementById("toggleNewAdminPasswor
 const changeAdminPasswordBtn = document.getElementById("changeAdminPasswordBtn");
 const changeAdminPasswordMsg = document.getElementById("changeAdminPasswordMsg");
 const employeeList = document.getElementById("employeeList");
+const employeeSearchInput = document.getElementById("employeeSearch");
+const employeeDepartmentFilter = document.getElementById("employeeDepartment");
+const summarySearchInput = document.getElementById("summarySearch");
+const summaryDepartmentFilter = document.getElementById("summaryDepartment");
 const summaryMonth = document.getElementById("summaryMonth");
 const summaryPageSize = document.getElementById("summaryPageSize");
 const loadSummaryBtn = document.getElementById("loadSummaryBtn");
@@ -47,6 +51,7 @@ const employeePageSize = document.getElementById("employeePageSize");
 const employeePrevBtn = document.getElementById("employeePrevBtn");
 const employeeNextBtn = document.getElementById("employeeNextBtn");
 const employeePageInfo = document.getElementById("employeePageInfo");
+const applyEmployeeFiltersBtn = document.getElementById("applyEmployeeFiltersBtn");
 const adminPasswordInput = document.getElementById("adminPassword");
 const toggleAdminPasswordBtn = document.getElementById("toggleAdminPasswordBtn");
 const unlockAdminBtn = document.getElementById("unlockAdminBtn");
@@ -224,14 +229,27 @@ const setPasswordFieldVisibility = (input, button) => {
   button.setAttribute("aria-label", isPassword ? "Hide password" : "Show password");
 };
 
+const getAdminFilters = (searchInput, departmentInput) => ({
+  search: String(searchInput?.value || "").trim(),
+  department: String(departmentInput?.value || "All").trim(),
+});
+
 const renderEmployees = async () => {
   const pageSize = Number(employeePageSize?.value || 10);
-  const data = await callApi(`/employees?page=${employeePage}&pageSize=${pageSize}`, "GET", undefined, {
+  const filters = getAdminFilters(employeeSearchInput, employeeDepartmentFilter);
+  const params = new URLSearchParams({
+    page: String(employeePage),
+    pageSize: String(pageSize),
+  });
+  if (filters.search) params.set("search", filters.search);
+  if (filters.department && filters.department !== "All") params.set("department", filters.department);
+
+  const data = await callApi(`/employees?${params.toString()}`, "GET", undefined, {
     "x-admin-token": adminToken || "",
   });
   employeeTotalPages = Number(data.totalPages || 1);
   if (!data.employees.length) {
-    employeeList.innerHTML = "<p class='muted'>No employees found.</p>";
+    employeeList.innerHTML = "<p class='muted'>No employees found for the current filters.</p>";
     if (employeePageInfo) employeePageInfo.textContent = `Page ${employeePage} of ${employeeTotalPages}`;
     return;
   }
@@ -262,6 +280,16 @@ const renderEmployees = async () => {
   if (employeeNextBtn) employeeNextBtn.disabled = (data.page || employeePage) >= employeeTotalPages;
 };
 
+const applyEmployeeFilters = async () => {
+  employeePage = 1;
+  await renderEmployees();
+};
+
+const applySummaryFilters = async () => {
+  summaryPage = 1;
+  await renderSummary();
+};
+
 const renderSummary = async () => {
   if (!summaryMonth || !summaryStats || !summaryTable) return;
   if (!adminUnlocked || !adminToken) {
@@ -273,8 +301,16 @@ const renderSummary = async () => {
   try {
     const month = summaryMonth.value || getISTMonthValue();
     const pageSize = Number(summaryPageSize?.value || 10);
+    const filters = getAdminFilters(summarySearchInput, summaryDepartmentFilter);
+    const params = new URLSearchParams({
+      month,
+      page: String(summaryPage),
+      pageSize: String(pageSize),
+    });
+    if (filters.search) params.set("search", filters.search);
+    if (filters.department && filters.department !== "All") params.set("department", filters.department);
     const data = await callApi(
-      `/admin/monthly-summary?month=${encodeURIComponent(month)}&page=${summaryPage}&pageSize=${pageSize}`,
+      `/admin/monthly-summary?${params.toString()}`,
       "GET",
       undefined,
       {
@@ -284,9 +320,11 @@ const renderSummary = async () => {
     summaryTotalPages = Number(data.totalPages || 1);
 
     const records = Array.isArray(data.records) ? data.records : [];
-    const lateDays = records.reduce((total, item) => total + Number(item.lateDays || 0), 0);
-    const overtimeHours = records.reduce((total, item) => total + Number(item.overtimeHours || 0), 0);
-    const totalPresentDays = records.reduce((total, item) => total + Number(item.daysPresent || 0), 0);
+    const stats = data.stats || {};
+    const lateDays = Number(stats.lateDays || 0);
+    const overtimeHours = Number(stats.overtimeHours || 0);
+    const totalPresentDays = Number(stats.presentDays || 0);
+    const totalEmployees = Number(stats.employees || records.length);
     const shift = data.shift || {};
     const shiftText = shift.start && shift.end
       ? `${shift.start} - ${shift.end} (Grace ${Number(shift.graceMinutes || 0)} mins)`
@@ -295,14 +333,14 @@ const renderSummary = async () => {
     summaryStats.innerHTML = `
       <strong>Month:</strong> ${data.month}
       &nbsp; | &nbsp;<strong>Shift:</strong> ${shiftText}
-      &nbsp; | &nbsp;<strong>Employees:</strong> ${records.length}
+      &nbsp; | &nbsp;<strong>Employees:</strong> ${totalEmployees}
       &nbsp; | &nbsp;<strong>Present days:</strong> ${totalPresentDays}
       &nbsp; | &nbsp;<strong>Late days:</strong> ${lateDays}
       &nbsp; | &nbsp;<strong>Overtime hrs:</strong> ${overtimeHours.toFixed(2)}
     `;
 
     if (!records.length) {
-      summaryTable.innerHTML = "<p class='muted'>No monthly attendance found for this period.</p>";
+      summaryTable.innerHTML = "<p class='muted'>No monthly attendance found for the current filters.</p>";
       if (summaryPageInfo) summaryPageInfo.textContent = `Page ${summaryPage} of ${summaryTotalPages}`;
       return;
     }
@@ -596,8 +634,7 @@ unlockAdminBtn.addEventListener("click", async () => {
 });
 
 loadSummaryBtn.addEventListener("click", async () => {
-  summaryPage = 1;
-  await renderSummary();
+  await applySummaryFilters();
 });
 
 summaryPageSize?.addEventListener("change", async () => {
@@ -608,6 +645,24 @@ summaryPageSize?.addEventListener("change", async () => {
 employeePageSize?.addEventListener("change", async () => {
   employeePage = 1;
   await renderEmployees();
+});
+
+applyEmployeeFiltersBtn?.addEventListener("click", async () => {
+  await applyEmployeeFilters();
+});
+
+employeeSearchInput?.addEventListener("keydown", async (event) => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    await applyEmployeeFilters();
+  }
+});
+
+summarySearchInput?.addEventListener("keydown", async (event) => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    await applySummaryFilters();
+  }
 });
 
 summaryPrevBtn?.addEventListener("click", async () => {
