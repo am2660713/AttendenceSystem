@@ -74,6 +74,7 @@ let summaryPage = 1;
 let summaryTotalPages = 1;
 let employeePage = 1;
 let employeeTotalPages = 1;
+let employeeSearchDebounce = null;
 const deviceTokenKey = "attendanceDeviceToken";
 const getDeviceToken = () => {
   const existing = localStorage.getItem(deviceTokenKey);
@@ -699,6 +700,19 @@ employeeSearchInput?.addEventListener("keydown", async (event) => {
     event.preventDefault();
     await applyEmployeeFilters();
   }
+});
+
+employeeSearchInput?.addEventListener("input", () => {
+  if (employeeSearchDebounce) clearTimeout(employeeSearchDebounce);
+  employeeSearchDebounce = setTimeout(async () => {
+    employeePage = 1;
+    await renderEmployees();
+  }, 300);
+});
+
+employeeDepartmentFilter?.addEventListener("change", async () => {
+  employeePage = 1;
+  await renderEmployees();
 });
 
 summarySearchInput?.addEventListener("keydown", async (event) => {
