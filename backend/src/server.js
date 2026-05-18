@@ -75,9 +75,22 @@ const isOfficeIpAllowedForConfig = (ip, config) => {
   const normalizedIp = normalizeIp(ip);
   return activeAllowedIps.some((allowedIp) => normalizeIp(allowedIp) === normalizedIp);
 };
-const readConfig = async () => JSON.parse(await fs.readFile(configPath, "utf8"));
+const readFileConfig = async () => JSON.parse(await fs.readFile(configPath, "utf8"));
+const readConfig = async () => {
+  const res = await query("SELECT setting_value FROM admin_settings WHERE setting_key = 'app_config'");
+  if (res.rows[0]?.setting_value) {
+    return JSON.parse(res.rows[0].setting_value);
+  }
+  return readFileConfig();
+};
 const writeConfig = async (config) => {
-  await fs.writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`, "utf8");
+  await query(
+    `INSERT INTO admin_settings (setting_key, setting_value, updated_at)
+     VALUES ('app_config', $1, NOW())
+     ON CONFLICT (setting_key)
+     DO UPDATE SET setting_value = EXCLUDED.setting_value, updated_at = NOW()`,
+    [JSON.stringify(config)]
+  );
 };
 const hashAdminPassword = (password, salt = crypto.randomBytes(16).toString("hex")) => {
   const digest = crypto.createHash("sha256").update(`${salt}:${password}`).digest("hex");
@@ -101,6 +114,11 @@ const ensureAdminPassword = async () => {
      VALUES ('admin_password', $1)`,
     [hashAdminPassword(adminPasswordSeed)]
   );
+};
+const ensureAppConfig = async () => {
+  const res = await query("SELECT setting_value FROM admin_settings WHERE setting_key = 'app_config'");
+  if (res.rows[0]?.setting_value) return;
+  await writeConfig(await readFileConfig());
 };
 const getISTDate = (timestamp = Date.now()) => new Date(timestamp).toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
 const getISTMonth = (timestamp = Date.now()) => new Date(timestamp).toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" }).slice(0, 7);
@@ -1017,6 +1035,9 @@ const PORT = Number(process.env.PORT || 4000);
 initDb()
   .then(() => {
     return ensureDefaultEmployees();
+  })
+  .then(() => {
+    return ensureAppConfig();
   })
   .then(() => {
     return ensureAdminPassword();
