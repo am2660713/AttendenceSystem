@@ -489,6 +489,36 @@ button:hover {
   border-top: 1px solid var(--line);
 }
 
+.current-ip-box {
+  display: grid;
+  grid-template-columns: minmax(90px, auto) minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px dashed rgba(20, 107, 128, 0.28);
+  background: #f4faf8;
+}
+
+.current-ip-box span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.current-ip-box strong {
+  color: var(--primary);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.current-ip-box .mini-secondary {
+  margin-top: 0;
+}
+
 .full-width {
   grid-column: 1 / -1;
 }

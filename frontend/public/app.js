@@ -27,6 +27,8 @@ const officeLatitudeInput = document.getElementById("officeLatitude");
 const officeLongitudeInput = document.getElementById("officeLongitude");
 const officeRadiusInput = document.getElementById("officeRadius");
 const officeAllowedIpsInput = document.getElementById("officeAllowedIps");
+const currentOfficeIpEl = document.getElementById("currentOfficeIp");
+const addCurrentIpBtn = document.getElementById("addCurrentIpBtn");
 const saveOfficeLocationBtn = document.getElementById("saveOfficeLocationBtn");
 const officeLocationMsg = document.getElementById("officeLocationMsg");
 const currentAdminPasswordInput = document.getElementById("currentAdminPassword");
@@ -222,17 +224,42 @@ const loadOfficeSettings = async () => {
   if (!officeNameInput || !officeLatitudeInput || !officeLongitudeInput || !officeRadiusInput || !officeAllowedIpsInput) return;
 
   try {
-    const config = await callApi("/config");
+    const [config, currentIp] = await Promise.all([
+      callApi("/config"),
+      adminUnlocked && adminToken
+        ? callApi("/admin/current-ip", "GET", undefined, { "x-admin-token": adminToken || "" })
+        : Promise.resolve({ ip: "" }),
+    ]);
     const office = config.office || {};
     officeNameInput.value = office.name || "";
     officeLatitudeInput.value = office.latitude ?? "";
     officeLongitudeInput.value = office.longitude ?? "";
     officeRadiusInput.value = office.radiusMeters ?? "";
     officeAllowedIpsInput.value = Array.isArray(office.allowedIps) ? office.allowedIps.join("\n") : "";
+    if (currentOfficeIpEl) currentOfficeIpEl.textContent = currentIp.ip || "Not available";
     if (officeLocationMsg) officeLocationMsg.textContent = "";
   } catch (error) {
     if (officeLocationMsg) setMessage(officeLocationMsg, error.message);
   }
+};
+
+const addCurrentIpToAllowedList = () => {
+  const currentIp = String(currentOfficeIpEl?.textContent || "").trim();
+  if (!currentIp || currentIp === "Not available" || currentIp === "Unlock admin to view") {
+    setMessage(officeLocationMsg, "Current IP is not available yet.");
+    return;
+  }
+
+  const existingIps = officeAllowedIpsInput.value
+    .split(/[\n,]+/)
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+  if (!existingIps.includes(currentIp)) {
+    existingIps.push(currentIp);
+    officeAllowedIpsInput.value = existingIps.join("\n");
+  }
+  setMessage(officeLocationMsg, "Current IP added. Click Save Office Location to store it.", true);
 };
 
 const setPasswordFieldVisibility = (input, button) => {
@@ -803,6 +830,8 @@ saveOfficeLocationBtn?.addEventListener("click", async () => {
     setMessage(officeLocationMsg, error.message);
   }
 });
+
+addCurrentIpBtn?.addEventListener("click", addCurrentIpToAllowedList);
 
 changeAdminPasswordBtn?.addEventListener("click", async () => {
   try {

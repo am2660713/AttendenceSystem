@@ -335,6 +335,12 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    if (req.method === "GET" && url.pathname === "/api/admin/current-ip") {
+      if (!requireAdminSession(req, res, corsOrigin)) return;
+      sendJson(res, 200, { ip: getRequestIp(req) }, corsOrigin);
+      return;
+    }
+
     if (req.method === "POST" && url.pathname === "/api/auth/login") {
       const body = await parseBody(req);
       const rawInput = String(body.employeeId || "").trim().toUpperCase();
