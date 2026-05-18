@@ -32,6 +32,7 @@ export const initDb = async () => {
       device_token TEXT,
       device_label TEXT,
       device_bound_at TIMESTAMPTZ,
+      wfh_allowed BOOLEAN NOT NULL DEFAULT FALSE,
       active BOOLEAN NOT NULL DEFAULT TRUE,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
@@ -58,6 +59,11 @@ export const initDb = async () => {
   `);
 
   await query(`
+    ALTER TABLE employees
+    ADD COLUMN IF NOT EXISTS wfh_allowed BOOLEAN NOT NULL DEFAULT FALSE;
+  `);
+
+  await query(`
     CREATE TABLE IF NOT EXISTS attendance (
       id BIGSERIAL PRIMARY KEY,
       employee_id TEXT NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
@@ -70,10 +76,28 @@ export const initDb = async () => {
       check_in_longitude DOUBLE PRECISION,
       check_out_latitude DOUBLE PRECISION,
       check_out_longitude DOUBLE PRECISION,
+      check_in_ip TEXT,
+      check_out_ip TEXT,
+      work_mode TEXT NOT NULL DEFAULT 'WFO',
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       UNIQUE(employee_id, attendance_date)
     );
+  `);
+
+  await query(`
+    ALTER TABLE attendance
+    ADD COLUMN IF NOT EXISTS check_in_ip TEXT;
+  `);
+
+  await query(`
+    ALTER TABLE attendance
+    ADD COLUMN IF NOT EXISTS check_out_ip TEXT;
+  `);
+
+  await query(`
+    ALTER TABLE attendance
+    ADD COLUMN IF NOT EXISTS work_mode TEXT NOT NULL DEFAULT 'WFO';
   `);
 
   await query(`

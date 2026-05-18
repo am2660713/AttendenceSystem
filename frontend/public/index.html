@@ -51,6 +51,17 @@
             </div>
             <label for="employeeId">Employee ID</label>
             <input id="employeeId" placeholder="EMP001" />
+            <label>Work Mode</label>
+            <div class="work-mode-toggle" role="radiogroup" aria-label="Select work mode">
+              <label class="work-mode-option">
+                <input type="radio" name="workMode" value="WFO" checked />
+                <span>WFO Office</span>
+              </label>
+              <label class="work-mode-option">
+                <input type="radio" name="workMode" value="WFH" />
+                <span>WFH Home</span>
+              </label>
+            </div>
             <button id="loginBtn" class="primary">Login</button>
             <p id="loginMsg" class="msg"></p>
           </div>

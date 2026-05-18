@@ -54,6 +54,7 @@ const sendCsv = (res, csv, origin = "*", filename = "attendance-export.csv") => 
 };
 
 const normalizeText = (value) => String(value || "").trim().toLowerCase().replace(/\s+/g, "");
+const normalizeWorkMode = (value) => (String(value || "WFO").trim().toUpperCase() === "WFH" ? "WFH" : "WFO");
 const normalizeIp = (value) => String(value || "").trim().replace(/^::ffff:/, "");
 const parseIpList = (value) =>
   String(value || "")
@@ -221,6 +222,7 @@ const mapAttendance = (row, config) => {
     checkOutAt: toISTDateTime(row.check_out_at),
     totalHours: Number(row.total_hours),
     status: row.status,
+    workMode: row.work_mode || "WFO",
     lateByMinutes: metrics?.lateByMinutes || 0,
     overtimeMinutes: metrics?.overtimeMinutes || 0,
     lateMark: metrics?.lateMark || false,
@@ -320,16 +322,20 @@ const server = http.createServer(async (req, res) => {
       const rawInput = String(body.employeeId || "").trim().toUpperCase();
       const deviceToken = String(body.deviceToken || "").trim();
       const deviceLabel = String(body.deviceLabel || "").trim().slice(0, 255);
+      const workMode = normalizeWorkMode(body.workMode);
       if (!rawInput) return sendJson(res, 400, { message: "Employee ID is required." }, corsOrigin);
       if (!deviceToken) return sendJson(res, 400, { message: "Device information is required." }, corsOrigin);
 
       const dbRes = await query(
-        "SELECT id, name, department, device_token, device_label FROM employees WHERE active = true AND id = $1",
+        "SELECT id, name, department, device_token, device_label, wfh_allowed FROM employees WHERE active = true AND id = $1",
         [rawInput]
       );
       const employee = dbRes.rows[0];
 
       if (!employee) return sendJson(res, 404, { message: "Employee not found." }, corsOrigin);
+      if (workMode === "WFH" && !employee.wfh_allowed) {
+        return sendJson(res, 403, { message: "WFH is not enabled for this employee. Please contact admin." }, corsOrigin);
+      }
       if (employee.device_token && employee.device_token !== deviceToken) {
         return sendJson(res, 403, { message: "This employee is locked to another company laptop." }, corsOrigin);
       }
@@ -349,6 +355,7 @@ const server = http.createServer(async (req, res) => {
       employeeSessions.set(token, {
         employeeId: employee.id,
         deviceToken,
+        workMode,
         expiresAt: Date.now() + 12 * 60 * 60 * 1000,
       });
 
@@ -359,7 +366,13 @@ const server = http.createServer(async (req, res) => {
           message: employee.device_token
             ? "Company laptop verified. Login successful."
             : "Company laptop approved and login successful.",
-          employee: { id: employee.id, name: employee.name, department: employee.department },
+          employee: {
+            id: employee.id,
+            name: employee.name,
+            department: employee.department,
+            workMode,
+            wfhAllowed: Boolean(employee.wfh_allowed),
+          },
           token,
         },
         corsOrigin
@@ -451,7 +464,7 @@ const server = http.createServer(async (req, res) => {
       const countRes = await query(`SELECT COUNT(*)::int AS count FROM employees WHERE ${whereClause}`, params);
       const total = countRes.rows[0].count;
       const dbRes = await query(
-        `SELECT id, name, department, device_token, device_label, device_bound_at
+        `SELECT id, name, department, device_token, device_label, device_bound_at, wfh_allowed
          FROM employees
          WHERE ${whereClause}
          ORDER BY id
@@ -466,6 +479,7 @@ const server = http.createServer(async (req, res) => {
             ...employee,
             deviceBound: Boolean(employee.device_token),
             deviceLabel: employee.device_label || "",
+            wfhAllowed: Boolean(employee.wfh_allowed),
           })),
           page,
           pageSize,
@@ -548,6 +562,38 @@ const server = http.createServer(async (req, res) => {
 
       await query("UPDATE employees SET device_token = NULL, device_label = NULL, device_bound_at = NULL WHERE id = $1", [id]);
       sendJson(res, 200, { message: "Company laptop binding reset successfully." }, corsOrigin);
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/admin/update-wfh") {
+      if (!requireAdminSession(req, res, corsOrigin)) return;
+      const body = await parseBody(req);
+      const id = String(body.id || "").trim().toUpperCase();
+      const wfhAllowed = Boolean(body.wfhAllowed);
+      if (!id) {
+        sendJson(res, 400, { message: "Employee ID is required." }, corsOrigin);
+        return;
+      }
+
+      const updateRes = await query(
+        `UPDATE employees
+         SET wfh_allowed = $2
+         WHERE id = $1 AND active = true
+         RETURNING id, wfh_allowed`,
+        [id, wfhAllowed]
+      );
+
+      if (!updateRes.rows[0]) {
+        sendJson(res, 404, { message: "Employee not found or inactive." }, corsOrigin);
+        return;
+      }
+
+      sendJson(
+        res,
+        200,
+        { message: wfhAllowed ? "WFH enabled for employee." : "WFH disabled for employee.", employee: updateRes.rows[0] },
+        corsOrigin
+      );
       return;
     }
 
@@ -655,7 +701,8 @@ const server = http.createServer(async (req, res) => {
            a.check_in_at,
            a.check_out_at,
            a.total_hours,
-           a.status
+           a.status,
+           a.work_mode
          FROM attendance a
          LEFT JOIN employees e ON e.id = a.employee_id
          ORDER BY a.attendance_date DESC, a.employee_id ASC`
@@ -670,6 +717,7 @@ const server = http.createServer(async (req, res) => {
         "check_out",
         "total_hours",
         "status",
+        "work_mode",
       ];
       const rows = dbRes.rows.map((row) => [
         row.employee_id,
@@ -680,6 +728,7 @@ const server = http.createServer(async (req, res) => {
         row.check_out_at ? toISTDateTime(row.check_out_at) : "",
         Number(row.total_hours),
         row.status,
+        row.work_mode || "WFO",
       ]);
       const csv = [header, ...rows]
         .map((row) => row.map(csvCell).join(","))
@@ -697,7 +746,7 @@ const server = http.createServer(async (req, res) => {
       const today = getISTDate();
       const config = await readConfig();
       const dbRes = await query(
-        `SELECT attendance_date, check_in_at, check_out_at, total_hours, status
+        `SELECT attendance_date, check_in_at, check_out_at, total_hours, status, work_mode
          FROM attendance
          WHERE employee_id = $1 AND attendance_date = $2`,
         [employeeId, today]
@@ -714,7 +763,7 @@ const server = http.createServer(async (req, res) => {
 
       const config = await readConfig();
       const dbRes = await query(
-        `SELECT attendance_date, check_in_at, check_out_at, total_hours, status
+        `SELECT attendance_date, check_in_at, check_out_at, total_hours, status, work_mode
          FROM attendance
          WHERE employee_id = $1
          ORDER BY attendance_date DESC, check_in_at DESC
@@ -739,7 +788,7 @@ const server = http.createServer(async (req, res) => {
       const [employeesRes, attendanceRes] = await Promise.all([
         query("SELECT id, name, department FROM employees WHERE active = true ORDER BY id"),
         query(
-          `SELECT a.employee_id, a.attendance_date, a.check_in_at, a.check_out_at, a.total_hours, a.status
+          `SELECT a.employee_id, a.attendance_date, a.check_in_at, a.check_out_at, a.total_hours, a.status, a.work_mode
            FROM attendance a
            WHERE a.check_in_at >= $1 AND a.check_in_at < $2
            ORDER BY a.employee_id ASC, a.attendance_date ASC`,
@@ -755,6 +804,8 @@ const server = http.createServer(async (req, res) => {
             name: employee.name,
             department: employee.department,
             daysPresent: 0,
+            wfoDays: 0,
+            wfhDays: 0,
             lateDays: 0,
             overtimeHours: 0,
             totalHours: 0,
@@ -767,7 +818,10 @@ const server = http.createServer(async (req, res) => {
         if (!employee) continue;
 
         const metrics = buildDailyMetrics(row, config);
+        const mode = normalizeWorkMode(row.work_mode);
         employee.daysPresent += 1;
+        if (mode === "WFH") employee.wfhDays += 1;
+        else employee.wfoDays += 1;
         employee.totalHours += Number(row.total_hours || 0);
         employee.overtimeHours += metrics.overtimeHours;
         if (metrics.lateMark) employee.lateDays += 1;
@@ -792,12 +846,14 @@ const server = http.createServer(async (req, res) => {
       const totals = filteredRecords.reduce(
         (acc, item) => {
           acc.daysPresent += Number(item.daysPresent || 0);
+          acc.wfoDays += Number(item.wfoDays || 0);
+          acc.wfhDays += Number(item.wfhDays || 0);
           acc.lateDays += Number(item.lateDays || 0);
           acc.overtimeHours += Number(item.overtimeHours || 0);
           acc.totalHours += Number(item.totalHours || 0);
           return acc;
         },
-        { daysPresent: 0, lateDays: 0, overtimeHours: 0, totalHours: 0 }
+        { daysPresent: 0, wfoDays: 0, wfhDays: 0, lateDays: 0, overtimeHours: 0, totalHours: 0 }
       );
 
       sendJson(
@@ -814,6 +870,8 @@ const server = http.createServer(async (req, res) => {
           stats: {
             employees: total,
             presentDays: totals.daysPresent,
+            wfoDays: totals.wfoDays,
+            wfhDays: totals.wfhDays,
             lateDays: totals.lateDays,
             overtimeHours: Number(totals.overtimeHours.toFixed(2)),
             totalHours: Number(totals.totalHours.toFixed(2)),
@@ -834,37 +892,18 @@ const server = http.createServer(async (req, res) => {
       if (!employeeId) return sendJson(res, 400, { message: "Employee ID is required." }, corsOrigin);
       const employeeSession = requireEmployeeSession(req, res, corsOrigin, employeeId);
       if (!employeeSession) return;
+      const sessionWorkMode = normalizeWorkMode(employeeSession.workMode);
       if (typeof latitude !== "number" || typeof longitude !== "number") {
         return sendJson(res, 400, { message: "Latitude and longitude are required." }, corsOrigin);
       }
 
-      const empRes = await query("SELECT id, device_token FROM employees WHERE id = $1 AND active = true", [employeeId]);
+      const empRes = await query("SELECT id, device_token, wfh_allowed FROM employees WHERE id = $1 AND active = true", [employeeId]);
       if (!empRes.rows[0]) return sendJson(res, 404, { message: "Employee not found." }, corsOrigin);
       if (empRes.rows[0].device_token !== employeeSession.deviceToken) {
         return sendJson(res, 403, { message: "Company laptop verification failed." }, corsOrigin);
       }
-
-      const config = await readConfig();
-      const requestIp = getRequestIp(req);
-      if (!isOfficeIpAllowedForConfig(requestIp, config)) {
-        return sendJson(
-          res,
-          403,
-          { message: "Attendance is allowed only from the office internet connection." },
-          corsOrigin
-        );
-      }
-
-      const distance = haversineMeters(latitude, longitude, config.office.latitude, config.office.longitude);
-      if (distance > config.office.radiusMeters) {
-        return sendJson(
-          res,
-          403,
-          {
-            message: `Outside office range. You are ${Math.round(distance)}m away, limit is ${config.office.radiusMeters}m.`,
-          },
-          corsOrigin
-        );
+      if (isCheckIn && sessionWorkMode === "WFH" && !empRes.rows[0].wfh_allowed) {
+        return sendJson(res, 403, { message: "WFH is not enabled for this employee." }, corsOrigin);
       }
 
       const now = Date.now();
@@ -875,6 +914,41 @@ const server = http.createServer(async (req, res) => {
         [employeeId, today]
       );
       const existing = existingRes.rows[0];
+      const workMode = isCheckIn ? sessionWorkMode : normalizeWorkMode(existing?.work_mode || sessionWorkMode);
+
+      if (!isCheckIn && existing?.check_in_at && sessionWorkMode !== workMode) {
+        return sendJson(
+          res,
+          409,
+          { message: `Please check out using the same work mode used for check-in: ${workMode}.` },
+          corsOrigin
+        );
+      }
+
+      const config = await readConfig();
+      const requestIp = getRequestIp(req);
+      if (workMode === "WFO") {
+        if (!isOfficeIpAllowedForConfig(requestIp, config)) {
+          return sendJson(
+            res,
+            403,
+            { message: "Attendance is allowed only from the office internet connection." },
+            corsOrigin
+          );
+        }
+
+        const distance = haversineMeters(latitude, longitude, config.office.latitude, config.office.longitude);
+        if (distance > config.office.radiusMeters) {
+          return sendJson(
+            res,
+            403,
+            {
+              message: `Outside office range. You are ${Math.round(distance)}m away, limit is ${config.office.radiusMeters}m.`,
+            },
+            corsOrigin
+          );
+        }
+      }
 
       if (isCheckIn) {
         if (existing?.check_in_at) return sendJson(res, 409, { message: "Check-in already marked." }, corsOrigin);
@@ -882,10 +956,10 @@ const server = http.createServer(async (req, res) => {
         const insertRes = await query(
           `INSERT INTO attendance (
             employee_id, attendance_date, check_in_at, check_out_at, total_hours, status,
-            check_in_latitude, check_in_longitude
-          ) VALUES ($1, $2, $3, NULL, 0, 'IN', $4, $5)
-          RETURNING attendance_date, check_in_at, check_out_at, total_hours, status`,
-          [employeeId, today, now, latitude, longitude]
+            check_in_latitude, check_in_longitude, check_in_ip, work_mode
+          ) VALUES ($1, $2, $3, NULL, 0, 'IN', $4, $5, $6, $7)
+          RETURNING attendance_date, check_in_at, check_out_at, total_hours, status, work_mode`,
+          [employeeId, today, now, latitude, longitude, requestIp, workMode]
         );
 
         sendJson(res, 200, { message: "Check-in marked successfully.", record: mapAttendance(insertRes.rows[0], config) }, corsOrigin);
@@ -909,12 +983,13 @@ const server = http.createServer(async (req, res) => {
          SET check_out_at = $1,
              check_out_latitude = $2,
              check_out_longitude = $3,
-             total_hours = $4,
+             check_out_ip = $4,
+             total_hours = $5,
              status = 'OUT',
              updated_at = NOW()
-         WHERE id = $5
-         RETURNING attendance_date, check_in_at, check_out_at, total_hours, status`,
-        [now, latitude, longitude, totalHours, existing.id]
+         WHERE id = $6
+         RETURNING attendance_date, check_in_at, check_out_at, total_hours, status, work_mode`,
+        [now, latitude, longitude, requestIp, totalHours, existing.id]
       );
 
       sendJson(

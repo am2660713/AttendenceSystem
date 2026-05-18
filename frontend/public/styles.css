@@ -261,6 +261,43 @@ body {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95);
 }
 
+.work-mode-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.work-mode-option {
+  margin: 0;
+  cursor: pointer;
+}
+
+.work-mode-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.work-mode-option span {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 44px;
+  border-radius: 14px;
+  border: 1px solid rgba(20, 107, 128, 0.16);
+  background: rgba(255, 255, 255, 0.76);
+  color: #24434c;
+  font-weight: 800;
+  transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.work-mode-option input:checked + span {
+  color: #fff;
+  background: linear-gradient(120deg, #0f4c5c, #146b80);
+  box-shadow: 0 10px 22px rgba(15, 76, 92, 0.18);
+}
+
 .login-form input::placeholder {
   color: rgba(61, 83, 91, 0.58);
 }
@@ -682,10 +719,7 @@ select:focus {
   background: #f3f9f7;
 }
 
-.summary-table tbody td:nth-child(3),
-.summary-table tbody td:nth-child(4),
-.summary-table tbody td:nth-child(5),
-.summary-table tbody td:nth-child(6) {
+.summary-table tbody td:nth-child(n+3) {
   text-align: center;
   white-space: nowrap;
 }
@@ -762,6 +796,16 @@ select:focus {
   font-weight: 700;
 }
 
+.success-badge {
+  background: rgba(31, 122, 79, 0.12);
+  color: #1f7a4f;
+}
+
+.warning-badge {
+  background: rgba(179, 52, 43, 0.10);
+  color: #9f2a24;
+}
+
 #employeeList.history {
   flex: 1 1 auto;
   min-height: 0;
@@ -797,10 +841,10 @@ select:focus {
 }
 
 .employee-table {
-  width: 1480px;
+  width: 1620px;
   border-collapse: collapse;
   table-layout: fixed;
-  min-width: 1480px;
+  min-width: 1620px;
 }
 
 .employee-table thead th {
@@ -1042,7 +1086,7 @@ select:focus {
   }
 
   .employee-table {
-    min-width: 1480px;
+    min-width: 1620px;
   }
 
   .summary-controls {

@@ -3,6 +3,7 @@ const API_BASE = window.__APP_CONFIG__?.API_BASE || "http://localhost:4000/api";
 const loginCard = document.getElementById("loginCard");
 const dashboardCard = document.getElementById("dashboardCard");
 const employeeIdInput = document.getElementById("employeeId");
+const workModeInputs = document.querySelectorAll('input[name="workMode"]');
 const loginBtn = document.getElementById("loginBtn");
 const loginMsg = document.getElementById("loginMsg");
 const empName = document.getElementById("empName");
@@ -87,6 +88,9 @@ const getDeviceLabel = () => {
 };
 const getISTMonthValue = () =>
   new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" }).slice(0, 7);
+const getSelectedWorkMode = () =>
+  document.querySelector('input[name="workMode"]:checked')?.value || "WFO";
+const getEmployeeModeText = () => currentEmployee?.workMode || "WFO";
 
 if (summaryMonth) {
   summaryMonth.value = getISTMonthValue();
@@ -134,7 +138,7 @@ const renderToday = async () => {
     return;
   }
 
-  todayStatus.textContent = `Date: ${today.record.date} | In: ${today.record.checkInAt || "-"} | Out: ${today.record.checkOutAt || "-"} | Hours: ${today.record.totalHours}`;
+  todayStatus.textContent = `Date: ${today.record.date} | Mode: ${today.record.workMode || getEmployeeModeText()} | In: ${today.record.checkInAt || "-"} | Out: ${today.record.checkOutAt || "-"} | Hours: ${today.record.totalHours}`;
 };
 
 const renderHistory = async () => {
@@ -152,7 +156,7 @@ const renderHistory = async () => {
   historyEl.innerHTML = data.records
     .map(
       (r) =>
-        `<div class="record"><strong>${r.date}</strong><br/>In: ${r.checkInAt || "-"}<br/>Out: ${r.checkOutAt || "-"}<br/>Hours: ${r.totalHours}</div>`
+        `<div class="record"><strong>${r.date}</strong> <span class="pin-badge">${r.workMode || "WFO"}</span><br/>In: ${r.checkInAt || "-"}<br/>Out: ${r.checkOutAt || "-"}<br/>Hours: ${r.totalHours}</div>`
     )
     .join("");
 };
@@ -271,7 +275,8 @@ const renderEmployees = async () => {
         <colgroup>
           <col style="width: 280px" />
           <col style="width: 180px" />
-          <col style="width: 760px" />
+          <col style="width: 700px" />
+          <col style="width: 200px" />
           <col style="width: 260px" />
         </colgroup>
         <thead>
@@ -279,6 +284,7 @@ const renderEmployees = async () => {
             <th>Employee</th>
             <th>Department</th>
             <th>Laptop Status</th>
+            <th>WFH Access</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -299,7 +305,15 @@ const renderEmployees = async () => {
                         : "Laptop not bound yet"
                     }</span>
                   </td>
+                  <td>
+                    <span class="pin-badge ${emp.wfhAllowed ? "success-badge" : "warning-badge"}">
+                      ${emp.wfhAllowed ? "WFH allowed" : "WFH blocked"}
+                    </span>
+                  </td>
                   <td class="employee-actions-cell">
+                    <button class="mini-secondary toggle-wfh-btn" data-employee-id="${emp.id}" data-wfh-allowed="${emp.wfhAllowed ? "false" : "true"}" type="button">
+                      ${emp.wfhAllowed ? "Block WFH" : "Allow WFH"}
+                    </button>
                     <button class="mini-secondary reset-device-btn" data-employee-id="${emp.id}" type="button">Reset Laptop</button>
                     <button class="mini-danger remove-employee-btn" data-employee-id="${emp.id}" type="button">Remove</button>
                   </td>
@@ -355,6 +369,8 @@ const renderSummary = async () => {
     const lateDays = Number(stats.lateDays || 0);
     const overtimeHours = Number(stats.overtimeHours || 0);
     const totalPresentDays = Number(stats.presentDays || 0);
+    const totalWfoDays = Number(stats.wfoDays || 0);
+    const totalWfhDays = Number(stats.wfhDays || 0);
     const totalEmployees = Number(stats.employees || records.length);
     const shift = data.shift || {};
     const shiftText = shift.start && shift.end
@@ -366,6 +382,8 @@ const renderSummary = async () => {
       &nbsp; | &nbsp;<strong>Shift:</strong> ${shiftText}
       &nbsp; | &nbsp;<strong>Employees:</strong> ${totalEmployees}
       &nbsp; | &nbsp;<strong>Present days:</strong> ${totalPresentDays}
+      &nbsp; | &nbsp;<strong>WFO:</strong> ${totalWfoDays}
+      &nbsp; | &nbsp;<strong>WFH:</strong> ${totalWfhDays}
       &nbsp; | &nbsp;<strong>Late days:</strong> ${lateDays}
       &nbsp; | &nbsp;<strong>Overtime hrs:</strong> ${overtimeHours.toFixed(2)}
     `;
@@ -380,17 +398,21 @@ const renderSummary = async () => {
       <div class="summary-table-wrap">
         <table class="summary-table">
           <colgroup>
-            <col style="width: 34%" />
-            <col style="width: 22%" />
-            <col style="width: 10%" />
-            <col style="width: 10%" />
-            <col style="width: 12%" />
-            <col style="width: 12%" />
+            <col style="width: 28%" />
+            <col style="width: 16%" />
+            <col style="width: 8%" />
+            <col style="width: 8%" />
+            <col style="width: 9%" />
+            <col style="width: 9%" />
+            <col style="width: 11%" />
+            <col style="width: 11%" />
           </colgroup>
           <thead>
             <tr>
               <th>Employee</th>
               <th>Department</th>
+              <th>WFO</th>
+              <th>WFH</th>
               <th>Present</th>
               <th>Late</th>
               <th>OT hrs</th>
@@ -404,6 +426,8 @@ const renderSummary = async () => {
                   <tr>
                     <td class="summary-employee-cell"><strong>${item.name}</strong></td>
                     <td>${item.department}</td>
+                    <td>${Number(item.wfoDays || 0)}</td>
+                    <td>${Number(item.wfhDays || 0)}</td>
                     <td>${Number(item.daysPresent || 0)}</td>
                     <td>${Number(item.lateDays || 0)}</td>
                     <td>${Number(item.overtimeHours || 0).toFixed(2)}</td>
@@ -492,10 +516,12 @@ loginBtn.addEventListener("click", async () => {
   try {
     loginMsg.textContent = "";
     const employeeId = employeeIdInput.value.trim().toUpperCase();
+    const workMode = getSelectedWorkMode();
     if (!employeeId) throw new Error("Enter employee ID");
 
     const { employee, message, token } = await callApi("/auth/login", "POST", {
       employeeId,
+      workMode,
       deviceToken: getDeviceToken(),
       deviceLabel: getDeviceLabel(),
     });
@@ -505,7 +531,7 @@ loginBtn.addEventListener("click", async () => {
     localStorage.setItem("attendanceEmployeeToken", token);
 
     empName.textContent = `${employee.name} (${employee.id})`;
-    empDept.textContent = employee.department;
+    empDept.textContent = `${employee.department} | ${employee.workMode || "WFO"}`;
 
     loginCard.classList.add("hidden");
     dashboardCard.classList.remove("hidden");
@@ -551,6 +577,9 @@ logoutBtn.addEventListener("click", () => {
   dashboardCard.classList.add("hidden");
   loginCard.classList.remove("hidden");
   employeeIdInput.value = "";
+  workModeInputs.forEach((input) => {
+    input.checked = input.value === "WFO";
+  });
   actionMsg.textContent = "";
 });
 
@@ -577,14 +606,23 @@ addEmployeeBtn.addEventListener("click", async () => {
 
 employeeList.addEventListener("click", async (event) => {
   const resetButton = event.target.closest(".reset-device-btn");
+  const toggleWfhButton = event.target.closest(".toggle-wfh-btn");
   const button = event.target.closest(".remove-employee-btn");
-  if (!resetButton && !button) return;
+  if (!resetButton && !toggleWfhButton && !button) return;
 
-  const employeeId = (resetButton || button).dataset.employeeId;
+  const employeeId = (resetButton || toggleWfhButton || button).dataset.employeeId;
   if (!employeeId) return;
 
   try {
-    if (resetButton) {
+    if (toggleWfhButton) {
+      const data = await callApi(
+        "/admin/update-wfh",
+        "POST",
+        { id: employeeId, wfhAllowed: toggleWfhButton.dataset.wfhAllowed === "true" },
+        { "x-admin-token": adminToken || "" }
+      );
+      setMessage(adminMsg, data.message, true);
+    } else if (resetButton) {
       const data = await callApi(
         "/admin/reset-device",
         "POST",
@@ -887,7 +925,7 @@ const bootstrap = async () => {
     currentEmployee = JSON.parse(cached);
     employeeToken = cachedToken;
     empName.textContent = `${currentEmployee.name} (${currentEmployee.id})`;
-    empDept.textContent = currentEmployee.department;
+    empDept.textContent = `${currentEmployee.department} | ${currentEmployee.workMode || "WFO"}`;
     loginCard.classList.add("hidden");
     dashboardCard.classList.remove("hidden");
     await refresh();
