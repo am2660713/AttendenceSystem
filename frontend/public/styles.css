@@ -840,7 +840,7 @@ select:focus {
   flex: 1 1 auto;
   min-height: 0;
   max-height: none;
-  overflow: auto;
+  overflow: hidden;
   border-top: 0;
   padding-bottom: 12px;
 }
@@ -861,6 +861,8 @@ select:focus {
 
 .employee-table-wrap {
   width: 100%;
+  height: 100%;
+  max-height: 100%;
   overflow-x: auto;
   overflow-y: auto;
   border: 1px solid var(--line);
@@ -1108,7 +1110,7 @@ select:focus {
   #adminPanelModal #employeeList.history {
     flex: 1;
     min-height: 0;
-    overflow: visible;
+    overflow: hidden;
   }
 
   .summary-table {
