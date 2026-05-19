@@ -897,13 +897,17 @@ select:focus {
 
 .employee-table tbody td {
   padding: 11px 12px;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 0;
   font-size: 12px;
   vertical-align: middle;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   line-height: 1.25;
+}
+
+.employee-table tbody tr {
+  border-bottom: 1px solid var(--line);
 }
 
 .employee-table tbody tr:nth-child(even) {
