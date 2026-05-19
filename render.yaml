@@ -21,6 +21,12 @@ services:
         sync: false
       - key: OFFICE_ALLOWED_IPS
         sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: REPORT_FROM_EMAIL
+        sync: false
+      - key: REPORT_TO_EMAILS
+        sync: false
       - key: NODE_VERSION
         value: "22"
 

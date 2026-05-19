@@ -20,6 +20,8 @@ const allowedOfficeIps = (process.env.OFFICE_ALLOWED_IPS || "")
   .split(",")
   .map((value) => value.trim())
   .filter(Boolean);
+const resendApiKey = process.env.RESEND_API_KEY || "";
+const reportFromEmail = process.env.REPORT_FROM_EMAIL || "Attendance Portal <onboarding@resend.dev>";
 
 const getCorsOrigin = (origin) => {
   if (!origin) return "*";
@@ -220,6 +222,246 @@ const csvCell = (value) => {
   return text;
 };
 
+const parseEmailList = (value) =>
+  String(value || "")
+    .split(/[\n,]+/)
+    .map((item) => item.trim().toLowerCase())
+    .filter((item) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(item));
+
+const getReportSettings = async () => {
+  const config = await readConfig();
+  const configEmails = Array.isArray(config.report?.emails) ? config.report.emails : [];
+  const envEmails = parseEmailList(process.env.REPORT_TO_EMAILS || process.env.REPORT_TO_EMAIL || "");
+  return {
+    emails: configEmails.length ? configEmails : envEmails,
+    fromEmail: config.report?.fromEmail || reportFromEmail,
+  };
+};
+
+const updateReportSettings = async (emails) => {
+  const config = await readConfig();
+  config.report = {
+    ...(config.report || {}),
+    emails,
+  };
+  await writeConfig(config);
+  return config.report;
+};
+
+const getPreviousISTMonth = () => {
+  const currentMonth = getISTMonth();
+  const [year, month] = currentMonth.split("-").map(Number);
+  const previousYear = month === 1 ? year - 1 : year;
+  const previousMonth = month === 1 ? 12 : month - 1;
+  return `${previousYear}-${padTwo(previousMonth)}`;
+};
+
+const buildMonthlyReport = async (month) => {
+  const config = await readConfig();
+  const { start, end, month: safeMonth } = getMonthBounds(month);
+  const [employeesRes, attendanceRes] = await Promise.all([
+    query("SELECT id, name, department FROM employees WHERE active = true ORDER BY id"),
+    query(
+      `SELECT a.employee_id, a.attendance_date, a.check_in_at, a.check_out_at, a.total_hours, a.status, a.work_mode
+       FROM attendance a
+       WHERE a.check_in_at >= $1 AND a.check_in_at < $2
+       ORDER BY a.employee_id ASC, a.attendance_date ASC`,
+      [start, end]
+    ),
+  ]);
+
+  const summary = new Map(
+    employeesRes.rows.map((employee) => [
+      employee.id,
+      {
+        employeeId: employee.id,
+        name: employee.name,
+        department: employee.department,
+        daysPresent: 0,
+        wfoDays: 0,
+        wfhDays: 0,
+        lateDays: 0,
+        overtimeHours: 0,
+        totalSeconds: 0,
+      },
+    ])
+  );
+
+  for (const row of attendanceRes.rows) {
+    const employee = summary.get(row.employee_id);
+    if (!employee) continue;
+    const metrics = buildDailyMetrics(row, config);
+    const mode = normalizeWorkMode(row.work_mode);
+    employee.daysPresent += 1;
+    if (mode === "WFH") employee.wfhDays += 1;
+    else employee.wfoDays += 1;
+    employee.totalSeconds += getAttendanceSeconds(row);
+    employee.overtimeHours += metrics.overtimeHours;
+    if (metrics.lateMark) employee.lateDays += 1;
+  }
+
+  const records = Array.from(summary.values()).map((item) => ({
+    ...item,
+    overtimeHours: Number(item.overtimeHours.toFixed(2)),
+    timePeriod: formatDuration(item.totalSeconds),
+  }));
+  const totals = records.reduce(
+    (acc, item) => {
+      acc.employees += 1;
+      acc.presentDays += item.daysPresent;
+      acc.wfoDays += item.wfoDays;
+      acc.wfhDays += item.wfhDays;
+      acc.lateDays += item.lateDays;
+      acc.overtimeHours += item.overtimeHours;
+      acc.totalSeconds += item.totalSeconds;
+      return acc;
+    },
+    { employees: 0, presentDays: 0, wfoDays: 0, wfhDays: 0, lateDays: 0, overtimeHours: 0, totalSeconds: 0 }
+  );
+
+  const header = [
+    "employee_id",
+    "employee_name",
+    "department",
+    "month",
+    "present_days",
+    "wfo_days",
+    "wfh_days",
+    "late_days",
+    "overtime_hours",
+    "time_period",
+  ];
+  const rows = records.map((item) => [
+    item.employeeId,
+    item.name,
+    item.department,
+    safeMonth,
+    item.daysPresent,
+    item.wfoDays,
+    item.wfhDays,
+    item.lateDays,
+    item.overtimeHours.toFixed(2),
+    item.timePeriod,
+  ]);
+  const csv = [header, ...rows].map((row) => row.map(csvCell).join(",")).join("\n");
+
+  return {
+    month: safeMonth,
+    csv,
+    records,
+    stats: {
+      ...totals,
+      overtimeHours: Number(totals.overtimeHours.toFixed(2)),
+      timePeriod: formatDuration(totals.totalSeconds),
+    },
+  };
+};
+
+const sendMonthlyReportEmail = async (month, recipients) => {
+  if (!resendApiKey) {
+    throw new Error("RESEND_API_KEY is not configured in Render environment variables.");
+  }
+  const emails = parseEmailList(recipients.join(","));
+  if (!emails.length) throw new Error("Add at least one valid HR/Admin report email.");
+
+  const report = await buildMonthlyReport(month);
+  const subject = `Attendance monthly report - ${report.month}`;
+  const html = `
+    <h2>Attendance Monthly Report - ${report.month}</h2>
+    <p>Please find the employee attendance CSV attached.</p>
+    <ul>
+      <li><strong>Employees:</strong> ${report.stats.employees}</li>
+      <li><strong>Present days:</strong> ${report.stats.presentDays}</li>
+      <li><strong>WFO days:</strong> ${report.stats.wfoDays}</li>
+      <li><strong>WFH days:</strong> ${report.stats.wfhDays}</li>
+      <li><strong>Late days:</strong> ${report.stats.lateDays}</li>
+      <li><strong>Overtime hours:</strong> ${report.stats.overtimeHours.toFixed(2)}</li>
+      <li><strong>Time Period:</strong> ${report.stats.timePeriod}</li>
+    </ul>
+  `;
+
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${resendApiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: reportFromEmail,
+      to: emails,
+      subject,
+      html,
+      attachments: [
+        {
+          filename: `attendance-report-${report.month}.csv`,
+          content: Buffer.from(`\uFEFF${report.csv}`, "utf8").toString("base64"),
+        },
+      ],
+    }),
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data.message || "Failed to send monthly report email.");
+  }
+
+  for (const email of emails) {
+    await query(
+      `INSERT INTO email_reports (report_month, sent_to, status, message, sent_at)
+       VALUES ($1, $2, 'sent', $3, NOW())
+       ON CONFLICT (report_month, sent_to)
+       DO UPDATE SET status = 'sent', message = EXCLUDED.message, sent_at = NOW()`,
+      [report.month, email, data.id || "Sent"]
+    );
+  }
+
+  return { ...report, sentTo: emails, providerId: data.id || null };
+};
+
+const sendAutomaticMonthlyReportIfNeeded = async () => {
+  const reportMonth = getPreviousISTMonth();
+  const settings = await getReportSettings();
+  if (!settings.emails.length || !resendApiKey) return;
+
+  const alreadySent = await query(
+    `SELECT id FROM email_reports
+     WHERE report_month = $1 AND sent_to = ANY($2::text[]) AND status = 'sent'
+     LIMIT 1`,
+    [reportMonth, settings.emails]
+  );
+  if (alreadySent.rows[0]) return;
+
+  try {
+    await sendMonthlyReportEmail(reportMonth, settings.emails);
+  } catch (error) {
+    for (const email of settings.emails) {
+      await query(
+        `INSERT INTO email_reports (report_month, sent_to, status, message, sent_at)
+         VALUES ($1, $2, 'failed', $3, NOW())
+         ON CONFLICT (report_month, sent_to)
+         DO UPDATE SET status = 'failed', message = EXCLUDED.message, sent_at = NOW()`,
+        [reportMonth, email, error.message || "Automatic report failed"]
+      );
+    }
+  }
+};
+
+const startMonthlyReportScheduler = () => {
+  const run = () => {
+    const dayOfMonth = new Date().toLocaleDateString("en-CA", {
+      timeZone: "Asia/Kolkata",
+      day: "2-digit",
+    });
+    if (dayOfMonth === "01") {
+      sendAutomaticMonthlyReportIfNeeded().catch((error) => {
+        console.error("Automatic monthly report failed:", error);
+      });
+    }
+  };
+  run();
+  setInterval(run, 6 * 60 * 60 * 1000);
+};
+
 const getAdminToken = (req) => String(req.headers["x-admin-token"] || "").trim();
 const getEmployeeToken = (req) => String(req.headers["x-employee-token"] || "").trim();
 
@@ -356,6 +598,61 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "GET" && url.pathname === "/api/admin/current-ip") {
       if (!requireAdminSession(req, res, corsOrigin)) return;
       sendJson(res, 200, { ip: getRequestIp(req) }, corsOrigin);
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/admin/report-settings") {
+      if (!requireAdminSession(req, res, corsOrigin)) return;
+      const settings = await getReportSettings();
+      const latestReports = await query(
+        `SELECT report_month, sent_to, status, message, sent_at
+         FROM email_reports
+         ORDER BY sent_at DESC
+         LIMIT 10`
+      );
+      sendJson(
+        res,
+        200,
+        {
+          emails: settings.emails,
+          fromEmail: settings.fromEmail,
+          emailConfigured: Boolean(resendApiKey),
+          latestReports: latestReports.rows,
+        },
+        corsOrigin
+      );
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/admin/report-settings") {
+      if (!requireAdminSession(req, res, corsOrigin)) return;
+      const body = await parseBody(req);
+      const emails = parseEmailList(Array.isArray(body.emails) ? body.emails.join(",") : body.emails);
+      if (!emails.length) {
+        sendJson(res, 400, { message: "Add at least one valid HR/Admin email." }, corsOrigin);
+        return;
+      }
+      await updateReportSettings(emails);
+      sendJson(res, 200, { message: "Monthly report emails saved.", emails }, corsOrigin);
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/admin/send-monthly-report") {
+      if (!requireAdminSession(req, res, corsOrigin)) return;
+      const body = await parseBody(req);
+      const settings = await getReportSettings();
+      const reportMonth = String(body.month || "").trim() || getPreviousISTMonth();
+      const report = await sendMonthlyReportEmail(reportMonth, settings.emails);
+      sendJson(
+        res,
+        200,
+        {
+          message: `Monthly report for ${report.month} sent successfully.`,
+          month: report.month,
+          sentTo: report.sentTo,
+        },
+        corsOrigin
+      );
       return;
     }
 
@@ -1074,6 +1371,7 @@ initDb()
   .then(() => {
     server.listen(PORT, () => {
       console.log(`Attendance backend running at http://localhost:${PORT}`);
+      startMonthlyReportScheduler();
     });
   })
   .catch((error) => {

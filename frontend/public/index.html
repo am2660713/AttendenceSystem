@@ -169,6 +169,19 @@
                 <button id="saveOfficeLocationBtn" class="secondary full" type="button">Save Office Location</button>
                 <p id="officeLocationMsg" class="msg"></p>
               </div>
+
+              <div class="admin-subsection">
+                <h3>Monthly Email Report</h3>
+                <p class="muted">Send employee monthly attendance CSV to HR/Admin email.</p>
+                <label for="reportEmails">HR/Admin Emails</label>
+                <textarea id="reportEmails" rows="3" placeholder="hr@company.com&#10;admin@company.com"></textarea>
+                <div class="report-actions">
+                  <button id="saveReportEmailsBtn" class="secondary full" type="button">Save Report Emails</button>
+                  <button id="sendMonthlyReportBtn" class="primary" type="button">Send Previous Month Report</button>
+                </div>
+                <p id="reportEmailStatus" class="muted"></p>
+                <p id="reportEmailMsg" class="msg"></p>
+              </div>
             </section>
 
             <section class="admin-panel-section admin-view-pane hidden" data-admin-view="summary">

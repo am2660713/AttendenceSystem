@@ -31,6 +31,11 @@ const currentOfficeIpEl = document.getElementById("currentOfficeIp");
 const addCurrentIpBtn = document.getElementById("addCurrentIpBtn");
 const saveOfficeLocationBtn = document.getElementById("saveOfficeLocationBtn");
 const officeLocationMsg = document.getElementById("officeLocationMsg");
+const reportEmailsInput = document.getElementById("reportEmails");
+const saveReportEmailsBtn = document.getElementById("saveReportEmailsBtn");
+const sendMonthlyReportBtn = document.getElementById("sendMonthlyReportBtn");
+const reportEmailStatus = document.getElementById("reportEmailStatus");
+const reportEmailMsg = document.getElementById("reportEmailMsg");
 const currentAdminPasswordInput = document.getElementById("currentAdminPassword");
 const newAdminPasswordInput = document.getElementById("newAdminPassword");
 const confirmAdminPasswordInput = document.getElementById("confirmAdminPassword");
@@ -212,10 +217,33 @@ const setAdminView = (view) => {
     renderEmployees();
   } else if (view === "tools") {
     loadOfficeSettings();
+    loadReportSettings();
   } else if (view === "security") {
     // Password page is self-contained.
   }
 };
+
+const loadReportSettings = async () => {
+  if (!reportEmailsInput || !reportEmailStatus) return;
+  if (!adminUnlocked || !adminToken) return;
+
+  try {
+    const data = await callApi("/admin/report-settings", "GET", undefined, { "x-admin-token": adminToken || "" });
+    reportEmailsInput.value = Array.isArray(data.emails) ? data.emails.join("\n") : "";
+    reportEmailStatus.textContent = data.emailConfigured
+      ? `Email sender ready. From: ${data.fromEmail}`
+      : "Email sender not configured. Add RESEND_API_KEY in Render to send reports.";
+    if (reportEmailMsg) reportEmailMsg.textContent = "";
+  } catch (error) {
+    setMessage(reportEmailMsg, error.message);
+  }
+};
+
+const getReportEmailsFromInput = () =>
+  reportEmailsInput.value
+    .split(/[\n,]+/)
+    .map((value) => value.trim())
+    .filter(Boolean);
 
 const applyAdminVisibility = () => {
   closeAdminPanels(true);
@@ -736,6 +764,7 @@ unlockAdminBtn.addEventListener("click", async () => {
     await renderEmployees();
     await renderSummary();
     await loadOfficeSettings();
+    await loadReportSettings();
   } catch (error) {
     setMessage(unlockMsg, error.message);
   }
@@ -835,6 +864,42 @@ saveOfficeLocationBtn?.addEventListener("click", async () => {
 });
 
 addCurrentIpBtn?.addEventListener("click", addCurrentIpToAllowedList);
+
+saveReportEmailsBtn?.addEventListener("click", async () => {
+  try {
+    if (!adminUnlocked || !adminToken) throw new Error("Unlock admin first.");
+    const emails = getReportEmailsFromInput();
+    if (!emails.length) throw new Error("Add at least one HR/Admin email.");
+
+    const data = await callApi(
+      "/admin/report-settings",
+      "POST",
+      { emails },
+      { "x-admin-token": adminToken || "" }
+    );
+    setMessage(reportEmailMsg, data.message, true);
+    setMessage(adminMsg, "Monthly report emails saved.", true);
+    await loadReportSettings();
+  } catch (error) {
+    setMessage(reportEmailMsg, error.message);
+  }
+});
+
+sendMonthlyReportBtn?.addEventListener("click", async () => {
+  try {
+    if (!adminUnlocked || !adminToken) throw new Error("Unlock admin first.");
+    setMessage(reportEmailMsg, "Sending monthly report...", true);
+    const data = await callApi(
+      "/admin/send-monthly-report",
+      "POST",
+      {},
+      { "x-admin-token": adminToken || "" }
+    );
+    setMessage(reportEmailMsg, `${data.message} Sent to: ${data.sentTo.join(", ")}`, true);
+  } catch (error) {
+    setMessage(reportEmailMsg, error.message);
+  }
+});
 
 changeAdminPasswordBtn?.addEventListener("click", async () => {
   try {

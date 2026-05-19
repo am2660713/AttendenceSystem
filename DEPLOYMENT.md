@@ -12,6 +12,9 @@
    - `PGPORT` = `5432`
    - `ALLOWED_ORIGINS` = your Vercel domain (example: `https://attendance-frontend.vercel.app`)
    - `OFFICE_ALLOWED_IPS` = optional fallback office public IP address (example: `203.0.113.10`)
+   - `RESEND_API_KEY` = Resend email API key for monthly HR reports
+   - `REPORT_FROM_EMAIL` = verified sender email in Resend
+   - `REPORT_TO_EMAILS` = fallback HR/Admin emails, comma-separated
 4. Open Render backend shell and run:
    - `npm run seed`
 
@@ -33,10 +36,12 @@
 
 ## Notes
 
-- Geofence coordinates are stored in `backend/data/config.json`.
+- Geofence coordinates and monthly report emails are stored in PostgreSQL `admin_settings`.
 - On backend CORS, use exact Vercel URL in `ALLOWED_ORIGINS`.
 - For multiple domains, use comma-separated values in `ALLOWED_ORIGINS`.
 - Admin can change allowed office public IPs from **Admin -> Employee Tools -> Office Location**.
 - For multiple office internet connections, enter one IP per line or comma-separated values.
 - If admin IPs are empty, the backend uses `OFFICE_ALLOWED_IPS` from Render.
 - If both admin IPs and `OFFICE_ALLOWED_IPS` are empty, the office public IP check is disabled.
+- Monthly email reports can be sent manually from **Admin -> Employee Tools -> Monthly Email Report**.
+- Automatic monthly reports run on the 1st day of the month when the backend service is awake/running.

@@ -489,6 +489,16 @@ button:hover {
   border-top: 1px solid var(--line);
 }
 
+.report-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.report-actions button {
+  margin-top: 0;
+}
+
 .current-ip-box {
   display: grid;
   grid-template-columns: minmax(90px, auto) minmax(0, 1fr) auto;

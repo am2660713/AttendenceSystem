@@ -107,4 +107,16 @@ export const initDb = async () => {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
   `);
+
+  await query(`
+    CREATE TABLE IF NOT EXISTS email_reports (
+      id BIGSERIAL PRIMARY KEY,
+      report_month TEXT NOT NULL,
+      sent_to TEXT NOT NULL,
+      status TEXT NOT NULL,
+      message TEXT,
+      sent_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE(report_month, sent_to)
+    );
+  `);
 };
