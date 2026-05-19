@@ -93,6 +93,7 @@ const getISTMonthValue = () =>
 const getSelectedWorkMode = () =>
   document.querySelector('input[name="workMode"]:checked')?.value || "WFO";
 const getEmployeeModeText = () => currentEmployee?.workMode || "WFO";
+const formatTimePeriod = (record) => record?.timePeriod || "00:00:00";
 
 if (summaryMonth) {
   summaryMonth.value = getISTMonthValue();
@@ -140,7 +141,7 @@ const renderToday = async () => {
     return;
   }
 
-  todayStatus.textContent = `Date: ${today.record.date} | Mode: ${today.record.workMode || getEmployeeModeText()} | In: ${today.record.checkInAt || "-"} | Out: ${today.record.checkOutAt || "-"} | Hours: ${today.record.totalHours}`;
+  todayStatus.textContent = `Date: ${today.record.date} | Mode: ${today.record.workMode || getEmployeeModeText()} | In: ${today.record.checkInAt || "-"} | Out: ${today.record.checkOutAt || "-"} | Time Period: ${formatTimePeriod(today.record)}`;
 };
 
 const renderHistory = async () => {
@@ -158,7 +159,7 @@ const renderHistory = async () => {
   historyEl.innerHTML = data.records
     .map(
       (r) =>
-        `<div class="record"><strong>${r.date}</strong> <span class="pin-badge">${r.workMode || "WFO"}</span><br/>In: ${r.checkInAt || "-"}<br/>Out: ${r.checkOutAt || "-"}<br/>Hours: ${r.totalHours}</div>`
+        `<div class="record"><strong>${r.date}</strong> <span class="pin-badge">${r.workMode || "WFO"}</span><br/>In: ${r.checkInAt || "-"}<br/>Out: ${r.checkOutAt || "-"}<br/>Time Period: ${formatTimePeriod(r)}</div>`
     )
     .join("");
 };
@@ -398,6 +399,7 @@ const renderSummary = async () => {
     const totalPresentDays = Number(stats.presentDays || 0);
     const totalWfoDays = Number(stats.wfoDays || 0);
     const totalWfhDays = Number(stats.wfhDays || 0);
+    const totalTimePeriod = stats.timePeriod || "00:00:00";
     const totalEmployees = Number(stats.employees || records.length);
     const shift = data.shift || {};
     const shiftText = shift.start && shift.end
@@ -413,6 +415,7 @@ const renderSummary = async () => {
       &nbsp; | &nbsp;<strong>WFH:</strong> ${totalWfhDays}
       &nbsp; | &nbsp;<strong>Late days:</strong> ${lateDays}
       &nbsp; | &nbsp;<strong>Overtime hrs:</strong> ${overtimeHours.toFixed(2)}
+      &nbsp; | &nbsp;<strong>Time Period:</strong> ${totalTimePeriod}
     `;
 
     if (!records.length) {
@@ -443,7 +446,7 @@ const renderSummary = async () => {
               <th>Present</th>
               <th>Late</th>
               <th>OT hrs</th>
-              <th>Total hrs</th>
+              <th>Time Period</th>
             </tr>
           </thead>
           <tbody>
@@ -458,7 +461,7 @@ const renderSummary = async () => {
                     <td>${Number(item.daysPresent || 0)}</td>
                     <td>${Number(item.lateDays || 0)}</td>
                     <td>${Number(item.overtimeHours || 0).toFixed(2)}</td>
-                    <td>${Number(item.totalHours || 0).toFixed(2)}</td>
+                    <td>${item.timePeriod || "00:00:00"}</td>
                   </tr>
                 `
               )

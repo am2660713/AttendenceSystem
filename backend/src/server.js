@@ -146,6 +146,23 @@ const toMinutes = (hhmm) => {
 
 const padTwo = (value) => String(value).padStart(2, "0");
 
+const formatDuration = (secondsValue) => {
+  const totalSeconds = Math.max(0, Math.floor(Number(secondsValue || 0)));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  return `${padTwo(hours)}:${padTwo(minutes)}:${padTwo(seconds)}`;
+};
+
+const getAttendanceSeconds = (row) => {
+  const checkIn = row.check_in_at ? Number(row.check_in_at) : null;
+  const checkOut = row.check_out_at ? Number(row.check_out_at) : null;
+  if (checkIn && checkOut && checkOut > checkIn) {
+    return Math.floor((checkOut - checkIn) / 1000);
+  }
+  return Math.round(Number(row.total_hours || 0) * 3600);
+};
+
 const getMonthBounds = (month) => {
   const safeMonth = /^\d{4}-\d{2}$/.test(month) ? month : getISTMonth();
   const start = new Date(`${safeMonth}-01T00:00:00+05:30`).getTime();
@@ -239,6 +256,7 @@ const mapAttendance = (row, config) => {
     checkInAt: toISTDateTime(row.check_in_at),
     checkOutAt: toISTDateTime(row.check_out_at),
     totalHours: Number(row.total_hours),
+    timePeriod: formatDuration(getAttendanceSeconds(row)),
     status: row.status,
     workMode: row.work_mode || "WFO",
     lateByMinutes: metrics?.lateByMinutes || 0,
@@ -739,7 +757,7 @@ const server = http.createServer(async (req, res) => {
         "date",
         "check_in",
         "check_out",
-        "total_hours",
+        "time_period",
         "status",
         "work_mode",
       ];
@@ -750,7 +768,7 @@ const server = http.createServer(async (req, res) => {
         row.attendance_date,
         row.check_in_at ? toISTDateTime(row.check_in_at) : "",
         row.check_out_at ? toISTDateTime(row.check_out_at) : "",
-        Number(row.total_hours),
+        formatDuration(getAttendanceSeconds(row)),
         row.status,
         row.work_mode || "WFO",
       ]);
@@ -833,6 +851,7 @@ const server = http.createServer(async (req, res) => {
             lateDays: 0,
             overtimeHours: 0,
             totalHours: 0,
+            totalSeconds: 0,
           },
         ])
       );
@@ -847,6 +866,7 @@ const server = http.createServer(async (req, res) => {
         if (mode === "WFH") employee.wfhDays += 1;
         else employee.wfoDays += 1;
         employee.totalHours += Number(row.total_hours || 0);
+        employee.totalSeconds += getAttendanceSeconds(row);
         employee.overtimeHours += metrics.overtimeHours;
         if (metrics.lateMark) employee.lateDays += 1;
       }
@@ -854,6 +874,7 @@ const server = http.createServer(async (req, res) => {
       const allRecords = Array.from(summary.values()).map((item) => ({
         ...item,
         totalHours: Number(item.totalHours.toFixed(2)),
+        timePeriod: formatDuration(item.totalSeconds),
         overtimeHours: Number(item.overtimeHours.toFixed(2)),
         month: safeMonth,
       }));
@@ -875,9 +896,10 @@ const server = http.createServer(async (req, res) => {
           acc.lateDays += Number(item.lateDays || 0);
           acc.overtimeHours += Number(item.overtimeHours || 0);
           acc.totalHours += Number(item.totalHours || 0);
+          acc.totalSeconds += Number(item.totalSeconds || 0);
           return acc;
         },
-        { daysPresent: 0, wfoDays: 0, wfhDays: 0, lateDays: 0, overtimeHours: 0, totalHours: 0 }
+        { daysPresent: 0, wfoDays: 0, wfhDays: 0, lateDays: 0, overtimeHours: 0, totalHours: 0, totalSeconds: 0 }
       );
 
       sendJson(
@@ -899,6 +921,7 @@ const server = http.createServer(async (req, res) => {
             lateDays: totals.lateDays,
             overtimeHours: Number(totals.overtimeHours.toFixed(2)),
             totalHours: Number(totals.totalHours.toFixed(2)),
+            timePeriod: formatDuration(totals.totalSeconds),
           },
         },
         corsOrigin
